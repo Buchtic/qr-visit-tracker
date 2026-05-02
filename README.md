@@ -1,8 +1,6 @@
 # qr-visit-tracker
-QR Visit Tracker je jednoduchý nástroj pro sledování návštěv přes QR kódy. Bez cookies a bez databáze zaznamenává fingerprint, typ zařízení a počty návštěv. Běží serverless na Cloudflare Pages a ukládá data do KV, takže je rychlý, lehký a snadno nasaditelný.
-
-Tenhle projekt vznikl z jednoduché potřeby:
-zjistit, kolik lidí skutečně otevře stránku přes QR kód — a ideálně to udělat bez Google Analytics, bez cookies, bez složitostí a bez backend serveru.
+Tenhle projekt vznikl z jednoduché potřeby (aneb napadlo nás to U Kruhu u 🍺):
+- zjistit, kolik lidí skutečně otevře stránku přes QR kód — a ideálně to udělat bez Google Analytics, bez cookies, bez složitostí a bez backend serveru.
 
 Cílem bylo vytvořit něco, co:
 
@@ -16,7 +14,7 @@ dá se nasadit během pár minut,
 
 a přesto poskytuje užitečné statistiky.
 
-Výsledkem je QR Visit Tracker — malý, čistý a serverless projekt postavený na Cloudflare Pages.
+Výsledkem je QR Visit Tracker - malý, čistý a serverless projekt postavený na Cloudflare Pages.
 Frontend je obyčejná statická stránka, která po načtení:
 
 vytvoří jednoduchý fingerprint návštěvníka,
