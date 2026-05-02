@@ -7,6 +7,7 @@ Cílem bylo vytvořit něco, co:
 - je bezpečné,
 - nevyžaduje žádnou databázi,
 - dá se nasadit během pár minut,
+- bude mít edukační dosah,
 - a přesto poskytuje užitečné statistiky.
 
 Výsledkem je QR Visit Tracker - malý, čistý a serverless projekt postavený na Cloudflare Pages.
