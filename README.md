@@ -1,6 +1,6 @@
 # qr-visit-tracker
 Tenhle projekt vznikl z jednoduché potřeby (aneb napadlo nás to U Kruhu u 🍺):
-- zjistit, kolik lidí skutečně otevře stránku přes QR kód — a ideálně to udělat bez Google Analytics, bez cookies, bez složitostí a bez backend serveru.
+- zjistit, kolik lidí skutečně otevře stránku přes QR kód - a ideálně to udělat bez Google Analytics, bez cookies, bez složitostí a bez backend serveru.
 
 Cílem bylo vytvořit něco, co:
 - je rychlé,
