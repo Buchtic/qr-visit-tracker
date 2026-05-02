@@ -1,6 +1,6 @@
 # qr-visit-tracker
 Tenhle projekt vznikl z jednoduché potřeby (aneb napadlo nás to U Kruhu u 🍺):
-- zjistit, kolik lidí skutečně otevře stránku přes QR kód - a ideálně to udělat bez Google Analytics, bez cookies, bez složitostí a bez backend serveru.
+- zjistit, kolik lidí skutečně otevře stránku přes QR kód – a ideálně to udělat bez Google Analytics, bez cookies, bez složitostí a bez backend serveru.
 
 Cílem bylo vytvořit něco, co:
 - je rychlé,
@@ -16,7 +16,7 @@ Frontend je obyčejná statická stránka, která po načtení:
 - pošle to na API endpoint,
 - a zobrazí aktuální počítadlo návštěv.
 
-Backend běží jako Pages Functions, což znamená, že žádný server neudržuješ — Cloudflare spustí funkci jen ve chvíli, kdy přijde požadavek.
+Backend běží jako Pages Functions, což znamená, že žádný server neudržuješ – Cloudflare spustí funkci jen ve chvíli, kdy přijde požadavek.
 Data se ukládají do KV Storage, což je extrémně rychlé key‑value úložiště, ideální pro malé projekty a jednoduché statistiky.
 
 Díky tomu projekt:
