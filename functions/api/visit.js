@@ -12,9 +12,10 @@ export async function onRequestPost(context) {
     }
 
     const fingerprint = body.fingerprint;
-    const deviceType  = body.deviceType || "unknown"; // mobile | desktop | unknown
-    const os          = body.os || "unknown";          // android | ios | windows | mac | linux | unknown
+    const deviceType  = body.deviceType || "unknown";
+    const os          = body.os || "unknown";
     const isBot       = body.isBot === true;
+    const utmCampaign = (body.utm_campaign || "").trim().toLowerCase().slice(0, 64);
 
     // Country z Cloudflare hlavičky — automaticky, bez externího API
     const country = (request.cf?.country || "unknown").toUpperCase();
@@ -35,6 +36,7 @@ export async function onRequestPost(context) {
         os,
         isBot,
         country,
+        utm_campaign: utmCampaign || null,
         timestamp: Date.now()
     });
     await env.VISIT_LOGS.put(
@@ -70,11 +72,32 @@ export async function onRequestPost(context) {
             const osTotal = parseInt(await env.VISIT_COUNTER.get(`os-${validOS}-total`) || "0");
             await env.VISIT_COUNTER.put(`os-${validOS}-total`, String(osTotal + 1));
 
-            // Country čítače — jen mobilní návštěvy pro veřejnou mapu,
-            // ale ukládáme device prefix aby admin mohl filtrovat
+            // Country čítače
             const countryKey = `country-${deviceValidKey}-${country}`;
             const countryTotal = parseInt(await env.VISIT_COUNTER.get(countryKey) || "0");
             await env.VISIT_COUNTER.put(countryKey, String(countryTotal + 1));
+
+            // UTM kampaň — zapsat do CAMPAIGNS namespace pokud slug existuje
+            if (utmCampaign && env.CAMPAIGNS) {
+                const campaignMeta = await env.CAMPAIGNS.get(`campaign:${utmCampaign}`);
+                if (campaignMeta) {
+                    // Celkový hit
+                    const hits = parseInt(await env.CAMPAIGNS.get(`campaign-hits:${utmCampaign}`) || "0");
+                    await env.CAMPAIGNS.put(`campaign-hits:${utmCampaign}`, String(hits + 1));
+
+                    // Denní hit
+                    const dayHits = parseInt(await env.CAMPAIGNS.get(`campaign-day:${utmCampaign}:${todayKey}`) || "0");
+                    await env.CAMPAIGNS.put(`campaign-day:${utmCampaign}:${todayKey}`, String(dayHits + 1));
+
+                    // Device hit
+                    const devHits = parseInt(await env.CAMPAIGNS.get(`campaign-device:${utmCampaign}:${deviceValidKey}`) || "0");
+                    await env.CAMPAIGNS.put(`campaign-device:${utmCampaign}:${deviceValidKey}`, String(devHits + 1));
+
+                    // Country hit
+                    const ccHits = parseInt(await env.CAMPAIGNS.get(`campaign-country:${utmCampaign}:${country}`) || "0");
+                    await env.CAMPAIGNS.put(`campaign-country:${utmCampaign}:${country}`, String(ccHits + 1));
+                }
+            }
         }
     }
 
