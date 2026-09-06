@@ -18,10 +18,13 @@ export async function onRequestPost(context) {
     const utmCampaign = (body.utm_campaign || "").trim().toLowerCase().slice(0, 64);
 
     // Country z Cloudflare hlavičky — automaticky, bez externího API
-    const country = (request.cf?.country || "unknown").toUpperCase();
+    // Country z CF — validujeme formát ISO 3166-1 alpha-2
+    const rawCountry = (request.cf?.country || "").toUpperCase();
+    const country = /^[A-Z]{2}$/.test(rawCountry) ? rawCountry : "unknown";
 
-    if (!fingerprint) {
-        return new Response(JSON.stringify({ error: "Missing fingerprint" }), {
+    // Validace fingerprint — musí být hex string 64 znaků (SHA-256)
+    if (!fingerprint || typeof fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(fingerprint)) {
+        return new Response(JSON.stringify({ error: "Invalid fingerprint" }), {
             status: 400,
             headers: { "Content-Type": "application/json" }
         });
