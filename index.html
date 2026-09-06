@@ -481,6 +481,43 @@
             <div class="accordion-item" style="background:transparent;border-color:#30363d;">
                 <h3 class="accordion-header">
                     <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq8"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Víte kde bydlím? Jak znáte moje město a poskytovatele internetu?
+                    </button>
+                </h3>
+                <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        <p style="margin-top:0;">
+                            Ano, přibližně. Město a poskytovatele internetu (ISP) zjišťujeme
+                            z tvé IP adresy &ndash; tu sděluje tvůj prohlížeč každému webu automaticky,
+                            bez výjimky a bez možnosti to vypnout. Je to technický základ internetu.
+                        </p>
+                        <p>
+                            Cloudflare, přes který tato stránka běží, překládá IP adresu na přibližnou
+                            polohu (město, region, stát) a název poskytovatele (ASN &ndash; Autonomous System Number).
+                            Tato data dostaneme automaticky při každém požadavku &ndash; bez externího API,
+                            bez poplatků, bez ukládání samotné IP adresy.
+                        </p>
+                        <p>
+                            <strong style="color:#c9d1d9;">Co neukládáme:</strong>
+                            Samotnou IP adresu záměrně nelogujeme &ndash; ukládáme jen odvozená data
+                            (město, stát, ISP). IP adresa je osobní údaj ve smyslu GDPR;
+                            město a ISP jsou agregované informace bez možnosti zpětné identifikace konkrétní osoby.
+                        </p>
+                        <p style="margin-bottom:0;">
+                            <strong style="color:#c9d1d9;">Přesnost:</strong>
+                            Geolokace podle IP je přibližná &ndash; typicky na úroveň města,
+                            ale může být nepřesná o desítky kilometrů. VPN nebo Tor zobrazí
+                            polohu výstupního uzlu, ne tvoji skutečnou polohu.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
                             data-bs-toggle="collapse" data-bs-target="#faq6"
                             style="background:transparent;color:inherit;box-shadow:none;">
                         Jsou tato data opravdu bez cookies a GDPR-friendly?

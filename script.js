@@ -295,7 +295,11 @@ function translateKey(key) {
         "Network Type": "Typ připojení",
         "Downlink (Mb/s)": "Rychlost stahování (Mb/s)",
         "RTT (ms)": "Latence (ms)",
-        "Save Data Mode": "Režim šetření dat"
+        "Save Data Mode": "Režim šetření dat",
+        "Město": "Město",
+        "Region": "Region",
+        "Poskytovatel (ISP)": "Poskytovatel (ISP)",
+        "EU návštěvník": "EU návštěvník"
     };
 
     return map[key] || key; // fallback = anglický klíč
@@ -650,9 +654,38 @@ async function init() {
     // 7) Zobrazení dnešního počtu
     document.getElementById("counter").textContent = stats.today;
 
-    // 8) Returning visitor banner — zobrazit až po API odpovědi (víme jestli byl dnes)
+    // 8) Returning visitor banner
     if (!isBot && stats.isReturning) {
         showReturningBanner();
+    }
+
+    // 9) CF geodata — přidat do síťové sekce fingerprintu
+    if (stats.geo) {
+        const geo = stats.geo;
+        const networkEl = document.getElementById("fp-network");
+        if (networkEl) {
+            const items = [];
+            if (geo.city)    items.push({ k: "Město",           v: geo.city });
+            if (geo.region && geo.region !== geo.city)
+                             items.push({ k: "Region",          v: geo.region });
+            if (geo.asOrg)   items.push({ k: "Poskytovatel (ISP)", v: geo.asOrg });
+            if (geo.isEU !== undefined)
+                             items.push({ k: "EU návštěvník",   v: geo.isEU ? "Ano" : "Ne" });
+
+            for (const { k, v } of items) {
+                const li = document.createElement("li");
+                const strong = document.createElement("strong");
+                strong.textContent = k + ":";
+                const span = document.createElement("span");
+                span.className = "badge bg-secondary";
+                span.style.cssText = "display:inline-block;white-space:normal;word-break:break-word;";
+                span.textContent = v;
+                li.appendChild(strong);
+                li.appendChild(document.createTextNode(" "));
+                li.appendChild(span);
+                networkEl.appendChild(li);
+            }
+        }
     }
 
     // 8) Načtení statistik pro grafy
