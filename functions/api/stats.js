@@ -77,6 +77,11 @@ export async function onRequestGet(context) {
     const botToday = parseInt(await env.VISIT_COUNTER.get(`bot-${todayKey}`) || "0");
     const botBreakdown = { total: botTotal, today: botToday };
 
+    // Pravděpodobná QR skenování
+    const scanTotal = parseInt(await env.VISIT_COUNTER.get("scan-total") || "0");
+    const scanToday = parseInt(await env.VISIT_COUNTER.get(`scan-${todayKey}`) || "0");
+    const scanBreakdown = { total: scanTotal, today: scanToday };
+
     // ASN ranking — top sítě/ISP
     const asnBreakdown = [];
     let asnCursor;
@@ -97,7 +102,7 @@ export async function onRequestGet(context) {
     const asnRanking = asnBreakdown.slice(0, 20); // top 20 ISP
 
     return new Response(
-        JSON.stringify({ today, total, stats, deviceBreakdown, deviceToday, osBreakdown, countryBreakdown, countryRanking, botBreakdown, asnRanking }),
+        JSON.stringify({ today, total, stats, deviceBreakdown, deviceToday, osBreakdown, countryBreakdown, countryRanking, botBreakdown, scanBreakdown, asnRanking }),
         { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
 }

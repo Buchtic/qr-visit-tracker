@@ -16,6 +16,16 @@ export async function onRequestPost(context) {
     const os          = body.os || "unknown";
     const isBot       = body.isBot === true;
     const utmCampaign = (body.utm_campaign || "").trim().toLowerCase().slice(0, 64);
+    const referrer    = (body.referrer    || "").slice(0, 500);
+
+    // likelyScan: vysoká pravděpodobnost že šlo o skutečné naskenování QR kódu
+    // Podmínky: mobilní zařízení + není bot + buď nemá referrer (přímý přístup)
+    //           nebo referrer je QR/scan aplikace
+    const isDirectAccess = !referrer || referrer === "";
+    const isQrReferrer   = /qr|scan|camera/i.test(referrer);
+    const likelyScan     = !isBot
+        && deviceType === "mobile"
+        && (isDirectAccess || isQrReferrer);
 
     // Country z Cloudflare hlavičky — automaticky, bez externího API
     // Country z CF — validujeme formát ISO 3166-1 alpha-2
@@ -60,6 +70,8 @@ export async function onRequestPost(context) {
         asn,
         asOrg,
         isEU,
+        referrer,
+        likelyScan,
         utm_campaign: utmCampaign || null,
         timestamp: Date.now()
     });
@@ -113,8 +125,15 @@ export async function onRequestPost(context) {
                 const asnKey = `asn-${asn}`;
                 const asnCount = parseInt(await env.VISIT_COUNTER.get(asnKey) || "0");
                 await env.VISIT_COUNTER.put(asnKey, String(asnCount + 1));
-                // Uložit i název organizace (přepsat — vždy stejný pro dané ASN)
                 if (asOrg) await env.VISIT_COUNTER.put(`asn-org-${asn}`, asOrg);
+            }
+
+            // likelyScan čítač — pravděpodobné skutečné QR skenování
+            if (likelyScan) {
+                const scanTotal = parseInt(await env.VISIT_COUNTER.get("scan-total") || "0");
+                const scanToday = parseInt(await env.VISIT_COUNTER.get(`scan-${todayKey}`) || "0");
+                await env.VISIT_COUNTER.put("scan-total", String(scanTotal + 1));
+                await env.VISIT_COUNTER.put(`scan-${todayKey}`, String(scanToday + 1));
             }
 
             // UTM kampaň
@@ -139,7 +158,7 @@ export async function onRequestPost(context) {
 
         return new Response(
             JSON.stringify({
-                today, total, isReturning,
+                today, total, isReturning, likelyScan,
                 geo: { country, city, region, asOrg, isEU }
             }),
             { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
