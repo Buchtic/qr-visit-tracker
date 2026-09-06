@@ -417,14 +417,11 @@ function getTooltip(key) {
 
 
 
+// ----------------------------------------
+// Logy
+// ----------------------------------------
+async function loadLogs(reset = true) {
     if (reset) {
-        currentCursor = null;
-        isFirstLoad = true;
-        document.getElementById("logsBody").innerHTML =
-            '<tr><td colspan="6" class="text-center text-secondary">Načítám…</td></tr>';
-    }
-
-    const from = document.getElementById("filterFrom").value;
     const to   = document.getElementById("filterTo").value;
 
     let url = `../api/admin/logs?limit=50`;
