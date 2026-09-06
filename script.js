@@ -42,6 +42,14 @@ function applyEnglishTexts() {
         document.getElementById("deviceChartTitle").textContent = "Mobile vs. Desktop";
     if (document.getElementById("osChartTitle"))
         document.getElementById("osChartTitle").textContent = "Operating Systems";
+    if (document.getElementById("faqTitle"))
+        document.getElementById("faqTitle").textContent = "FAQ";
+    if (document.getElementById("totalMobileLabel"))
+        document.getElementById("totalMobileLabel").textContent = "of which mobile";
+    if (document.getElementById("totalDesktopLabel"))
+        document.getElementById("totalDesktopLabel").textContent = "of which desktop";
+    if (document.getElementById("totalLabel"))
+        document.getElementById("totalLabel").textContent = "Total visitors";
 
     document.getElementById("nocookiesTitle").textContent = "This project uses 0 cookies";
     document.getElementById("nocookiesText1").textContent =
@@ -694,7 +702,18 @@ async function init() {
     // 8) Načtení statistik pro grafy
     const fullStats = await loadStats();
 
-    // 9) Vykreslení všech grafů
+    // 9) Plnit device split v hlavním panelu
+    if (fullStats.deviceToday) {
+        document.getElementById("todayMobile").textContent = fullStats.deviceToday.mobile || 0;
+        document.getElementById("todayDesktop").textContent = fullStats.deviceToday.desktop || 0;
+    }
+    if (fullStats.deviceBreakdown) {
+        const db = fullStats.deviceBreakdown;
+        document.getElementById("totalMobile").textContent = db.mobile || 0;
+        document.getElementById("totalDesktop").textContent = db.desktop || 0;
+    }
+
+    // 10) Vykreslení všech grafů
     renderLineChart(fullStats.stats);
     renderHeatmap(fullStats.stats);
     renderDeviceChart(fullStats.deviceBreakdown);

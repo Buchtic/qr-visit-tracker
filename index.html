@@ -28,20 +28,48 @@
     </div>
 	<h1 id="title" class="text-center">Neskenuj náhodné QR kódy</h1>
 	
-<div class="row">
-    <div class="col-md-6">
-        <div class="panel text-center">
-            <h2 id="todayLabel">Počet unikátních návštěvníků dnes</h2>
-            <div class="count" id="counter">…</div>
+<div class="panel text-center" id="statsPanel">
+
+    <!-- Primární metrika — dnešní návštěvníci -->
+    <h2 id="todayLabel" style="margin-bottom:4px;">Unikátní návštěvníci dnes</h2>
+    <div class="count" id="counter" style="font-size:4rem;line-height:1.1;">…</div>
+
+    <!-- Rozdělení mobil / desktop -->
+    <div id="deviceSplit" style="display:flex;justify-content:center;gap:32px;margin:12px 0 20px;">
+        <div>
+            <div style="font-size:1.6rem;font-weight:700;" id="todayMobile">…</div>
+            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
+                <i class="bi bi-phone"></i> Mobil
+            </div>
+        </div>
+        <div style="width:1px;background:#30363d;"></div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:700;" id="todayDesktop">…</div>
+            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
+                <i class="bi bi-display"></i> Desktop
+            </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="panel text-center">
-            <h2 id="totalLabel">Celkový počet unikátních návštěvníků</h2>
-            <div class="count" id="totalCounter">…</div>
+    <!-- Oddělovač -->
+    <hr style="border-color:#30363d;margin:0 auto 16px;max-width:200px;">
+
+    <!-- Sekundární metrika — celkem -->
+    <div style="display:flex;justify-content:center;gap:48px;">
+        <div>
+            <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalLabel">Celkem návštěvníků</div>
+            <div style="font-size:1.4rem;font-weight:600;" id="totalCounter">…</div>
+        </div>
+        <div>
+            <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalMobileLabel">z toho mobilů</div>
+            <div style="font-size:1.4rem;font-weight:600;" id="totalMobile">…</div>
+        </div>
+        <div>
+            <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalDesktopLabel">z toho desktopů</div>
+            <div style="font-size:1.4rem;font-weight:600;" id="totalDesktop">…</div>
         </div>
     </div>
+
 </div>
 
     <div class="panel">
@@ -201,6 +229,136 @@
         kteří dělají zábavná a záživná školení v oblasti kyberbezpečnosti, phishingu, sociálního inženýrství, u kterých se nebudete nudit.
         a bezpečného chování online.
         </p>
+    </div>
+
+    <!-- FAQ -->
+    <div class="panel" id="faqPanel">
+        <h2 id="faqTitle">Časté otázky</h2>
+
+        <div class="accordion" id="faqAccordion">
+
+            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq1"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Co je to fingerprint a jak vzniká?
+                    </button>
+                </h3>
+                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        Fingerprint je unikátní otisk tvého zařízení a prohlížeče. Vzniká kombinací desítek
+                        technických parametrů — rozlišení displeje, jazyk, časová zóna, typ GPU, počet CPU vláken
+                        a dalších. Žádný z těchto parametrů sám o sobě nestačí k identifikaci, ale jejich
+                        kombinace je statisticky velmi unikátní. Výsledek se zahashuje algoritmem SHA-256
+                        na 64znakový řetězec. Tento otisk neobsahuje žádné osobní údaje, ale umožňuje
+                        rozpoznat opakovanou návštěvu ze stejného zařízení.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq2"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Jak se určuje typ zařízení (mobil vs. desktop)?
+                    </button>
+                </h3>
+                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        Detekce probíhá ve třech vrstvách přímo v prohlížeči. Nejprve se zkusí moderní
+                        User-Agent Client Hints API, které poskytuje přesnou informaci. Pokud není dostupné,
+                        analyzuje se User Agent řetězec (obsahuje slova jako „Android" nebo „iPhone").
+                        Jako záloha se kontroluje počet dotykových bodů — zařízení s více než jedním
+                        bodem je pravděpodobně mobilní. Výsledek je vždy jen odhad, ne absolutní pravda.
+                        Tablety mohou být klasifikovány různě podle nastavení prohlížeče.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq3"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Proč mohou být data o OS nepřesná — zejména u Apple zařízení?
+                    </button>
+                </h3>
+                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        Safari od verze 13 záměrně zamrazilo přesnou verzi systému v User Agentu.
+                        Jde o ochranu soukromí — přesná verze OS je jeden ze signálů pro fingerprinting.
+                        V praxi to znamená, že všichni Safari uživatelé vypadají pro web téměř identicky.
+                        Základní rozlišení iOS vs. macOS vs. Windows je obvykle zachováno,
+                        přesné verze systému jsou ale nespolehlivé u všech Apple zařízení.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq4"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Co jsou „roboti" a proč se nepočítají do statistik?
+                    </button>
+                </h3>
+                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        Roboti jsou automatizované programy, které procházejí weby — vyhledávací crawlery,
+                        bezpečnostní skenery nebo nástroje pro testování. Jejich návštěvy by zkreslily
+                        statistiky, protože nepředstavují skutečné lidi. Detekujeme je pomocí několika
+                        signálů: příznak <code>navigator.webdriver</code> (přítomný u Selenium a Puppeteer),
+                        podezřelá slova v User Agentu (headless, crawler, bot) nebo nulové hardwarové
+                        hodnoty typické pro headless prostředí. Roboti jsou zalogováni pro audit,
+                        ale do počítadel se nezapočítávají.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq5"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Jak se chránit před sledováním přes QR kódy?
+                    </button>
+                </h3>
+                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        Před naskenováním si zkontroluj, zda QR kód není přelepen jiným.
+                        Pokud ti prohlížeč ukáže URL před otevřením, přečti ji — podvodné stránky
+                        mají často podobné, ale jiné domény (např. <code>paypa1.com</code> místo <code>paypal.com</code>).
+                        Použij prohlížeč v anonymním režimu pro neznámé QR kódy. Pokud chceš minimalizovat
+                        fingerprinting obecně, pomáhá Firefox s rozšířením uBlock Origin nebo prohlížeč
+                        Brave, které aktivně blokují fingerprintingové techniky. Žádné řešení ale
+                        není 100% — tato stránka ukazuje, co lze zjistit i bez cookies a bez souhlasu.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq6"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Jsou tato data opravdu bez cookies a GDPR-friendly?
+                    </button>
+                </h3>
+                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        Ano — stránka neukládá žádné cookies, nepoužívá Google Analytics ani jiné
+                        trackery třetích stran. Fingerprint se vytváří a hashuje výhradně v prohlížeči,
+                        na server se odesílá jen výsledný hash (ne raw data). Hash neumožňuje zpětně
+                        rekonstruovat původní hodnoty. Ukládaná data (hash + typ zařízení + timestamp)
+                        neobsahují žádné osobní údaje ve smyslu GDPR. Cílem projektu je naopak
+                        ukázat, co weby <em>mohou</em> dělat — a motivovat k větší obezřetnosti.
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <footer class="text-center mt-5 mb-3" style="color:#8b949e;">
