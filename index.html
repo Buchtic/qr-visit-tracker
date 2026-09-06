@@ -28,6 +28,8 @@
     </div>
 	<h1 id="title" class="text-center">Neskenuj náhodné QR kódy</h1>
 	
+<div class="row g-3 mb-0">
+<div class="col-md-6">
 <div class="panel text-center" id="statsPanel">
 
     <!-- Primární metrika — dnešní návštěvníci -->
@@ -51,26 +53,49 @@
         </div>
     </div>
 
-    <!-- Oddělovač -->
+
+
+</div>
+</div><!-- /.col-md-6 první box -->
+
+<div class="col-md-6">
+<div class="panel text-center" id="totalStatsPanel">
+
+    <h2 id="totalPanelLabel" style="margin-bottom:4px;">Unikátní návštěvníci celkem</h2>
+    <div class="count" id="totalCounter" style="font-size:4rem;line-height:1.1;">…</div>
+
+    <div id="totalDeviceSplit" style="display:flex;justify-content:center;gap:32px;margin:12px 0 20px;">
+        <div>
+            <div style="font-size:1.6rem;font-weight:700;" id="totalMobile">…</div>
+            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
+                <i class="bi bi-phone"></i> Mobil
+            </div>
+        </div>
+        <div style="width:1px;background:#30363d;"></div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:700;" id="totalDesktop">…</div>
+            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
+                <i class="bi bi-display"></i> Desktop
+            </div>
+        </div>
+    </div>
+
     <hr style="border-color:#30363d;margin:0 auto 16px;max-width:200px;">
 
-    <!-- Sekundární metrika — celkem -->
     <div style="display:flex;justify-content:center;gap:48px;">
         <div>
-            <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalLabel">Celkem návštěvníků</div>
-            <div style="font-size:1.4rem;font-weight:600;" id="totalCounter">…</div>
-        </div>
-        <div>
             <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalMobileLabel">z toho mobilů</div>
-            <div style="font-size:1.4rem;font-weight:600;" id="totalMobile">…</div>
+            <div style="font-size:1.4rem;font-weight:600;" id="totalMobilePct">…</div>
         </div>
         <div>
             <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalDesktopLabel">z toho desktopů</div>
-            <div style="font-size:1.4rem;font-weight:600;" id="totalDesktop">…</div>
+            <div style="font-size:1.4rem;font-weight:600;" id="totalDesktopPct">…</div>
         </div>
     </div>
 
 </div>
+</div><!-- /.col-md-6 druhý box -->
+</div><!-- /.row -->
 
     <div class="panel">
         <h2 id="whyTitle">Proč je skenování náhodných QR kódů rizikové</h2>

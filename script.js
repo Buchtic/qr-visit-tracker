@@ -695,22 +695,37 @@ async function init() {
     // 6) Poslání fingerprintu na backend (včetně OS a bot flagu)
     const stats = await sendVisit(data.fingerprint, deviceType, os, isBot);
 
-    // 7) Zobrazení dnešního a celkového počtu
+    // 7) Zobrazení dnešního počtu
     document.getElementById("counter").textContent = stats.today;
-    document.getElementById("totalCounter").textContent = stats.total;
 
     // 8) Načtení statistik pro grafy
     const fullStats = await loadStats();
 
-    // 9) Plnit device split v hlavním panelu
+    // 9) Plnit device split — dnešní panel
     if (fullStats.deviceToday) {
         document.getElementById("todayMobile").textContent = fullStats.deviceToday.mobile || 0;
         document.getElementById("todayDesktop").textContent = fullStats.deviceToday.desktop || 0;
     }
+
+    // 10) Plnit celkový panel
+    const total = fullStats.total || stats.total || 0;
+    if (document.getElementById("totalCounter"))
+        document.getElementById("totalCounter").textContent = total;
+
     if (fullStats.deviceBreakdown) {
         const db = fullStats.deviceBreakdown;
-        document.getElementById("totalMobile").textContent = db.mobile || 0;
-        document.getElementById("totalDesktop").textContent = db.desktop || 0;
+        const mob = db.mobile || 0;
+        const desk = db.desktop || 0;
+        const sum = mob + desk || 1; // ochrana před dělením nulou
+
+        if (document.getElementById("totalMobile"))
+            document.getElementById("totalMobile").textContent = mob;
+        if (document.getElementById("totalDesktop"))
+            document.getElementById("totalDesktop").textContent = desk;
+        if (document.getElementById("totalMobilePct"))
+            document.getElementById("totalMobilePct").textContent = Math.round(mob / sum * 100) + " %";
+        if (document.getElementById("totalDesktopPct"))
+            document.getElementById("totalDesktopPct").textContent = Math.round(desk / sum * 100) + " %";
     }
 
     // 10) Vykreslení všech grafů
