@@ -204,8 +204,6 @@
                                 <i class="bi bi-clipboard"></i>
                             </button>
                         </div>
-                        <div style="font-size:0.8rem;color:#8b949e;margin:8px 0 4px;">Landing page:</div>
-                        <code id="cLanding" style="font-size:0.8rem;background:#0d1117;padding:6px 10px;border-radius:6px;border:1px solid #30363d;display:block;word-break:break-all;"></code>
                     </div>
                 </div>
                 <div class="modal-footer" style="border-color:#30363d;">
@@ -612,10 +610,8 @@ async function createCampaign() {
 
         const base = location.origin;
         const campaignUrl = `${base}/?utm_campaign=${data.slug}`;
-        const landingUrl  = `${base}/kampan/${data.slug}`;
 
-        document.getElementById("cUrl").textContent     = campaignUrl;
-        document.getElementById("cLanding").textContent = landingUrl;
+        document.getElementById("cUrl").textContent = campaignUrl;
         document.getElementById("cResult").style.display = "";
         btn.textContent = "Vytvořit další";
         btn.disabled = false;
@@ -665,10 +661,16 @@ async function loadCampaigns() {
                                 </td>
                                 <td style="text-align:right;font-weight:700;color:#58a6ff;">
                                     ${c.total}
+                                    ${(c.mobile || c.desktop) ? `
+                                    <div style="font-size:0.7rem;font-weight:400;color:#8b949e;margin-top:2px;">
+                                        <i class="bi bi-phone" style="color:#3fb950;"></i> ${c.mobile || 0}
+                                        &nbsp;
+                                        <i class="bi bi-display" style="color:#58a6ff;"></i> ${c.desktop || 0}
+                                    </div>` : ""}
                                 </td>
                                 <td style="white-space:nowrap;">
-                                    <a href="${base}/kampan/${c.slug}" target="_blank"
-                                       class="btn btn-sm btn-outline-secondary" title="Landing page">
+                                    <a href="${base}/?utm_campaign=${c.slug}" target="_blank"
+                                       class="btn btn-sm btn-outline-secondary" title="Otevřít stránku kampaně">
                                         <i class="bi bi-box-arrow-up-right"></i>
                                     </a>
                                     <button class="btn btn-sm btn-outline-secondary ms-1"
