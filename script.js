@@ -860,9 +860,6 @@ function fillSection(id, obj) {
         box.appendChild(li);
     }
 
-        box.appendChild(li);
-    }
-
     // aktivace tooltipů jen pokud je Bootstrap JS k dispozici
     if (window.bootstrap && bootstrap.Tooltip) {
         const tooltipTriggerList = [].slice.call(
