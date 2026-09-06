@@ -45,8 +45,13 @@ export async function onRequestPost(context) {
         { expirationTtl: 60 * 60 * 24 * 90 } // 90 dní
     );
 
-    // Boti se nezapočítají do žádných čítačů
-    if (!isBot) {
+    // Boti se nezapočítají do hlavních čítačů, ale sledujeme jejich počet
+    if (isBot) {
+        const botTotal = parseInt(await env.VISIT_COUNTER.get("bot-total") || "0");
+        const botToday = parseInt(await env.VISIT_COUNTER.get(`bot-${todayKey}`) || "0");
+        await env.VISIT_COUNTER.put("bot-total", String(botTotal + 1));
+        await env.VISIT_COUNTER.put(`bot-${todayKey}`, String(botToday + 1));
+    } else {
         const uniqueKey = `fp:${todayKey}:${fingerprint}`;
         const alreadySeen = await env.VISIT_COUNTER.get(uniqueKey);
 

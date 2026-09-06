@@ -72,8 +72,13 @@ export async function onRequestGet(context) {
         .map(([cc, count]) => ({ cc, count }))
         .sort((a, b) => b.count - a.count);
 
+    // Bot statistiky
+    const botTotal = parseInt(await env.VISIT_COUNTER.get("bot-total") || "0");
+    const botToday = parseInt(await env.VISIT_COUNTER.get(`bot-${todayKey}`) || "0");
+    const botBreakdown = { total: botTotal, today: botToday };
+
     return new Response(
-        JSON.stringify({ today, total, stats, deviceBreakdown, deviceToday, osBreakdown, countryBreakdown, countryRanking }),
+        JSON.stringify({ today, total, stats, deviceBreakdown, deviceToday, osBreakdown, countryBreakdown, countryRanking, botBreakdown }),
         { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
 }
