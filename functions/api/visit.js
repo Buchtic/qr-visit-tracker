@@ -12,9 +12,12 @@ export async function onRequestPost(context) {
     }
 
     const fingerprint = body.fingerprint;
-    const deviceType = body.deviceType || "unknown"; // mobile | desktop | unknown
-    const os = body.os || "unknown";                 // android | ios | windows | mac | linux | unknown
-    const isBot = body.isBot === true;
+    const deviceType  = body.deviceType || "unknown"; // mobile | desktop | unknown
+    const os          = body.os || "unknown";          // android | ios | windows | mac | linux | unknown
+    const isBot       = body.isBot === true;
+
+    // Country z Cloudflare hlavičky — automaticky, bez externího API
+    const country = (request.cf?.country || "unknown").toUpperCase();
 
     if (!fingerprint) {
         return new Response(JSON.stringify({ error: "Missing fingerprint" }), {
@@ -31,6 +34,7 @@ export async function onRequestPost(context) {
         deviceType,
         os,
         isBot,
+        country,
         timestamp: Date.now()
     });
     await env.VISIT_LOGS.put(
@@ -54,7 +58,7 @@ export async function onRequestPost(context) {
             await env.VISIT_COUNTER.put(todayKey, String(todayCount + 1));
             await env.VISIT_COUNTER.put("total", String(totalCount + 1));
 
-            // Device čítače: mobile-total, desktop-total, mobile-DATUM, desktop-DATUM
+            // Device čítače
             const deviceValidKey = ["mobile", "desktop"].includes(deviceType) ? deviceType : "unknown";
             const devTotal = parseInt(await env.VISIT_COUNTER.get(`device-${deviceValidKey}-total`) || "0");
             const devToday = parseInt(await env.VISIT_COUNTER.get(`device-${deviceValidKey}-${todayKey}`) || "0");
@@ -65,6 +69,12 @@ export async function onRequestPost(context) {
             const validOS = ["android", "ios", "windows", "mac", "linux"].includes(os) ? os : "unknown";
             const osTotal = parseInt(await env.VISIT_COUNTER.get(`os-${validOS}-total`) || "0");
             await env.VISIT_COUNTER.put(`os-${validOS}-total`, String(osTotal + 1));
+
+            // Country čítače — jen mobilní návštěvy pro veřejnou mapu,
+            // ale ukládáme device prefix aby admin mohl filtrovat
+            const countryKey = `country-${deviceValidKey}-${country}`;
+            const countryTotal = parseInt(await env.VISIT_COUNTER.get(countryKey) || "0");
+            await env.VISIT_COUNTER.put(countryKey, String(countryTotal + 1));
         }
     }
 
