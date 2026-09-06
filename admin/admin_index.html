@@ -8,6 +8,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4.3.0/build/index.umd.min.js"></script>
 <link rel="stylesheet" href="../styles.css">
 <style>
     .stat-card { text-align:center; }
@@ -115,6 +116,26 @@
         </div>
     </div>
 
+    <!-- Mapa + žebříček zemí (všechna zařízení) -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-8">
+            <div class="panel">
+                <h2 style="font-size:1rem;">
+                    <i class="bi bi-globe me-2" style="color:#58a6ff;"></i>
+                    Geografické rozložení
+                    <small style="font-size:0.7rem;color:#8b949e;font-weight:400;">– všechna zařízení</small>
+                </h2>
+                <canvas id="worldMap"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="panel">
+                <h2 style="font-size:1rem;">Top země</h2>
+                <div id="countryRanking" style="font-size:0.85rem;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Logy -->
     <div class="panel">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -201,7 +222,7 @@ let isFirstLoad = true;
 // Načtení statistik
 // ----------------------------------------
 async function loadStats() {
-    const res = await fetch("../api/stats");
+    const res = await fetch("../api/stats?device=all");
     const data = await res.json();
 
     document.getElementById("mTotal").textContent = data.total || 0;
@@ -212,6 +233,22 @@ async function loadStats() {
         const mob = db.mobile || 0;
         const desk = db.desktop || 0;
         const sum = mob + desk || 1;
+
+        document.getElementById("mMobile").textContent = mob;
+        document.getElementById("mDesktop").textContent = desk;
+        document.getElementById("mMobilePct").textContent =
+            Math.round(mob / sum * 100) + " % z mobilů";
+        document.getElementById("mDesktopPct").textContent =
+            Math.round(desk / sum * 100) + " % z desktopů";
+    }
+
+    renderLineChart(data.stats || []);
+    renderHeatmap(data.stats || []);
+    renderDeviceChart(data.deviceBreakdown);
+    renderOsChart(data.osBreakdown);
+    renderCountryRanking(data.countryRanking || []);
+    renderWorldMap(data.countryBreakdown || {});
+}
 
         document.getElementById("mMobile").textContent = mob;
         document.getElementById("mDesktop").textContent = desk;
@@ -314,8 +351,107 @@ function renderHeatmap(stats) {
 }
 
 // ----------------------------------------
-// Logy
+// Geo – žebříček a mapa
 // ----------------------------------------
+function countryFlag(cc) {
+    if (!cc || cc === "unknown" || cc.length !== 2) return "🌍";
+    return cc.toUpperCase().replace(/./g, c =>
+        String.fromCodePoint(c.charCodeAt(0) + 127397)
+    );
+}
+
+function renderCountryRanking(ranking) {
+    const el = document.getElementById("countryRanking");
+    if (!el) return;
+    if (!ranking || ranking.length === 0) {
+        el.innerHTML = '<p style="color:#8b949e;font-size:0.8rem;">Zatím žádná data.</p>';
+        return;
+    }
+    const max = ranking[0]?.count || 1;
+    el.innerHTML = ranking.slice(0, 15).map((item, i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+            <span style="font-size:0.72rem;color:#8b949e;width:16px;text-align:right;">${i + 1}</span>
+            <span style="font-size:1rem;">${countryFlag(item.cc)}</span>
+            <span style="font-size:0.78rem;min-width:28px;color:#8b949e;">${item.cc}</span>
+            <div style="flex:1;background:#21262d;border-radius:3px;height:5px;overflow:hidden;">
+                <div style="height:100%;background:#58a6ff;border-radius:3px;width:${Math.round(item.count/max*100)}%"></div>
+            </div>
+            <span style="font-size:0.8rem;font-weight:600;min-width:24px;text-align:right;">${item.count}</span>
+        </div>
+    `).join("");
+}
+
+async function renderWorldMap(countryBreakdown) {
+    const canvas = document.getElementById("worldMap");
+    if (!canvas) return;
+
+    if (typeof ChartGeo === "undefined") {
+        await new Promise(resolve => {
+            const check = setInterval(() => {
+                if (typeof ChartGeo !== "undefined") { clearInterval(check); resolve(); }
+            }, 100);
+            setTimeout(() => { clearInterval(check); resolve(); }, 3000);
+        });
+    }
+    if (typeof ChartGeo === "undefined") { canvas.style.display = "none"; return; }
+
+    let countries;
+    try {
+        const res = await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+        const topology = await res.json();
+        countries = ChartGeo.topojson.feature(topology, topology.objects.countries).features;
+    } catch { canvas.style.display = "none"; return; }
+
+    const numericToAlpha2 = {
+        "040":"AT","056":"BE","100":"BG","191":"HR","196":"CY","203":"CZ",
+        "208":"DK","233":"EE","246":"FI","250":"FR","276":"DE","300":"GR",
+        "348":"HU","372":"IE","380":"IT","428":"LV","440":"LT","442":"LU",
+        "470":"MT","528":"NL","616":"PL","620":"PT","642":"RO","703":"SK",
+        "705":"SI","724":"ES","752":"SE","826":"GB","008":"AL","020":"AD",
+        "070":"BA","112":"BY","756":"CH","804":"UA","688":"RS","807":"MK",
+        "499":"ME","643":"RU","792":"TR","840":"US","124":"CA","484":"MX",
+        "076":"BR","032":"AR","152":"CL","170":"CO","604":"PE","858":"UY",
+        "356":"IN","156":"CN","392":"JP","410":"KR","036":"AU","554":"NZ",
+        "710":"ZA","818":"EG","566":"NG","404":"KE"
+    };
+
+    new Chart(canvas, {
+        type: "choropleth",
+        data: {
+            labels: countries.map(d => d.properties.name),
+            datasets: [{
+                label: "Návštěvníci",
+                data: countries.map(d => {
+                    const alpha2 = numericToAlpha2[String(d.id).padStart(3, "0")];
+                    return { feature: d, value: alpha2 ? (countryBreakdown[alpha2] || 0) : 0 };
+                }),
+                backgroundColor(ctx) {
+                    if (!ctx.raw) return "#21262d";
+                    const v = ctx.raw.value;
+                    if (v === 0) return "#21262d";
+                    return `rgba(88,166,255,${Math.min(0.2 + v * 0.15, 1)})`;
+                },
+                borderColor: "#30363d",
+                borderWidth: 0.5
+            }]
+        },
+        options: {
+            showOutline: false,
+            showGraticule: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label(ctx) {
+                            return `${ctx.raw.feature.properties.name}: ${ctx.raw.value}`;
+                        }
+                    }
+                }
+            },
+            scales: { projection: { axis: "x", projection: "naturalEarth1" } }
+        }
+    });
+}
 async function loadLogs(reset = true) {
     if (reset) {
         currentCursor = null;
