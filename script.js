@@ -8,6 +8,10 @@ document.getElementById("themeToggle").addEventListener("click", () => {
     body.classList.toggle("dark", !isDark);
     body.classList.toggle("light", isDark);
 
+    const newTheme = isDark ? "light" : "dark";
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+
     document.getElementById("themeToggle").textContent =
         isDark ? "◑" : "☼";
 });
@@ -310,10 +314,15 @@ function translateKey(key) {
 // API calls
 // ---------------------------
 async function sendVisit(fingerprint, deviceType, os, isBot, utmCampaign) {
+    const referrer = document.referrer || "";
     const res = await fetch("api/visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fingerprint, deviceType, os, isBot, utm_campaign: utmCampaign || null })
+        body: JSON.stringify({
+            fingerprint, deviceType, os, isBot,
+            utm_campaign: utmCampaign || null,
+            referrer
+        })
     });
     return await res.json();
 }

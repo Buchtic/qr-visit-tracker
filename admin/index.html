@@ -98,6 +98,31 @@
         </div>
     </div>
 
+    <!-- Scan metriky — pravděpodobná QR skenování -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="panel stat-card">
+                <div class="num" id="mScanTotal" style="color:#d29922;">–</div>
+                <div class="lbl">Pravd. QR skenů celkem</div>
+                <div class="lbl" id="mScanPct" style="color:#d29922;font-size:0.75rem;"></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="panel stat-card">
+                <div class="num" id="mScanToday" style="color:#d29922;">–</div>
+                <div class="lbl">Pravd. QR skenů dnes</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="panel" style="font-size:0.78rem;color:#8b949e;padding:10px 14px;">
+                <i class="bi bi-info-circle me-1" style="color:#d29922;"></i>
+                <strong style="color:#c9d1d9;">Metodika:</strong>
+                Počítáme návštěvy kde: mobilní zařízení + není bot + přímý přístup (bez referreru)
+                nebo referrer obsahuje qr/scan. Nezahrnuje uživatele kteří URL opsali na desktopu.
+            </div>
+        </div>
+    </div>
+
     <!-- Grafy řádek 1 -->
     <div class="row g-3 mb-3">
         <div class="col-md-8">
@@ -362,6 +387,17 @@ async function loadStats() {
         if (bb.total > 0) {
             const pct = Math.round(bb.total / (total + bb.total) * 100);
             document.getElementById("mBotPct").textContent = pct + " % z přístupů";
+        }
+    }
+
+    if (data.scanBreakdown) {
+        const sb = data.scanBreakdown;
+        const total = data.total || 1;
+        document.getElementById("mScanTotal").textContent = sb.total || 0;
+        document.getElementById("mScanToday").textContent = sb.today || 0;
+        if (sb.total > 0 && total > 0) {
+            const pct = Math.round(sb.total / total * 100);
+            document.getElementById("mScanPct").textContent = pct + " % z mobilních návštěv";
         }
     }
 
