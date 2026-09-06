@@ -320,6 +320,69 @@ async function loadStats() {
 }
 
 
+// ---------------------------
+// Desktop / Bot banner
+// ---------------------------
+function showDesktopBanner() {
+    const banner = document.createElement("div");
+    banner.id = "desktopBanner";
+    banner.style.cssText = `
+        background: linear-gradient(135deg, #1c2a3a, #1a2332);
+        border: 1px solid #30363d;
+        border-left: 4px solid #58a6ff;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    `;
+    banner.innerHTML = `
+        <span style="font-size:1.4rem;flex-shrink:0;">🖥️</span>
+        <div>
+            <strong style="color:#58a6ff;">Vypadá to, že jsi na počítači</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
+                QR kódy se skenují hlavně mobilem &ndash; tady je dobrý. Statistiky návštěvnosti
+                počítají desktop a mobil zvlášť, takže tato návštěva se projeví v kategorii
+                <em>Desktop</em>. Pokud ti přesto záleží na tom, co se o tobě prozrazuje,
+                čti dál &ndash; platí to pro každé zařízení.
+            </p>
+        </div>
+    `;
+    const container = document.querySelector(".container");
+    const title = document.getElementById("title");
+    container.insertBefore(banner, title.nextSibling);
+}
+
+function showBotBanner() {
+    const banner = document.createElement("div");
+    banner.id = "botBanner";
+    banner.style.cssText = `
+        background: linear-gradient(135deg, #2a1c1c, #231a1a);
+        border: 1px solid #30363d;
+        border-left: 4px solid #f85149;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    `;
+    banner.innerHTML = `
+        <span style="font-size:1.4rem;flex-shrink:0;">🤖</span>
+        <div>
+            <strong style="color:#f85149;">Detekován automatizovaný přístup</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
+                Zdá se, že tuto stránku navštěvuje bot nebo automatizovaný nástroj.
+                Tato návštěva se nezapočítá do statistik, ale je zalogována pro audit.
+            </p>
+        </div>
+    `;
+    const container = document.querySelector(".container");
+    const title = document.getElementById("title");
+    container.insertBefore(banner, title.nextSibling);
+}
+
 // Grafy a geo funkce jsou v charts.js
 
 
