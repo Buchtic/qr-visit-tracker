@@ -432,6 +432,20 @@ function showReturningBanner() {
 // Grafy a geo funkce jsou v charts.js
 
 // ---------------------------
+// Spinner helpers
+// ---------------------------
+function hideSpinner(spinnerId) {
+    const el = document.getElementById(spinnerId);
+    if (el) el.style.display = "none";
+}
+
+function showChart(spinnerId, canvasId) {
+    hideSpinner(spinnerId);
+    const canvas = document.getElementById(canvasId);
+    if (canvas) canvas.style.display = "";
+}
+
+// ---------------------------
 // Campaign badge
 // ---------------------------
 async function loadCampaignBadge(slug) {
@@ -737,11 +751,21 @@ async function init() {
 
     // 11) Vykreslení grafů
     renderLineChart(fullStats.stats);
+    showChart("visitsChartSpinner", "visitsChart");
+
     renderHeatmap(fullStats.stats);
+    hideSpinner("heatmapSpinner");
+
     renderDeviceChart(fullStats.deviceBreakdown);
+    showChart("deviceChartSpinner", "deviceChart");
+
     renderOsChart(fullStats.osBreakdown);
+    showChart("osChartSpinner", "osChart");
+
     renderCountryRanking(fullStats.countryRanking || []);
     renderWorldMap(fullStats.countryBreakdown || {});
+    showChart("worldMapSpinner", "worldMap");
+
     if (typeof renderAsnRanking === "function") {
         renderAsnRanking(fullStats.asnRanking || []);
     }

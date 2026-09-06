@@ -256,7 +256,45 @@
             <span id="logCount" style="font-size:0.8rem;color:#8b949e;"></span>
         </div>
 
-        <!-- Filtr -->
+        <!-- Quick filtry -->
+        <div class="mb-3 d-flex flex-wrap gap-2" id="quickFilters">
+            <span style="font-size:0.78rem;color:#8b949e;align-self:center;">Rychlé filtry:</span>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="" onclick="applyQuickFilter(this)">
+                Vše
+            </button>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="device=mobile" onclick="applyQuickFilter(this)">
+                <i class="bi bi-phone"></i> Jen mobil
+            </button>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="device=desktop" onclick="applyQuickFilter(this)">
+                <i class="bi bi-display"></i> Jen desktop
+            </button>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="bot=0" onclick="applyQuickFilter(this)">
+                <i class="bi bi-person-check"></i> Bez botů
+            </button>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="bot=1" onclick="applyQuickFilter(this)">
+                <i class="bi bi-robot"></i> Jen boti
+            </button>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="scan=1" onclick="applyQuickFilter(this)">
+                <i class="bi bi-qr-code-scan"></i> Pravd. QR skeny
+            </button>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="unique=1" onclick="applyQuickFilter(this)">
+                <i class="bi bi-person"></i> Unikátní fingerprinty
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    OS
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><a class="dropdown-item qf-btn" data-filter="os=android" onclick="applyQuickFilter(this)" href="#">🤖 Android</a></li>
+                    <li><a class="dropdown-item qf-btn" data-filter="os=ios"     onclick="applyQuickFilter(this)" href="#">🍎 iOS</a></li>
+                    <li><a class="dropdown-item qf-btn" data-filter="os=windows" onclick="applyQuickFilter(this)" href="#">🪟 Windows</a></li>
+                    <li><a class="dropdown-item qf-btn" data-filter="os=mac"     onclick="applyQuickFilter(this)" href="#">🍏 Mac</a></li>
+                    <li><a class="dropdown-item qf-btn" data-filter="os=linux"   onclick="applyQuickFilter(this)" href="#">🐧 Linux</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Datum filtr -->
         <div class="filter-bar mb-3">
             <div>
                 <label>Od</label>
@@ -326,8 +364,22 @@ document.getElementById("themeToggle").addEventListener("click", () => {
 // ----------------------------------------
 // Stav stránkování
 // ----------------------------------------
-let currentCursor = null;
-let isFirstLoad = true;
+let currentCursor  = null;
+let isFirstLoad    = true;
+let activeQFilter  = ""; // aktuální quick filter parametry
+
+function applyQuickFilter(el) {
+    // Zvýraznit aktivní tlačítko
+    document.querySelectorAll(".qf-btn").forEach(b => {
+        b.classList.remove("btn-primary");
+        b.classList.add("btn-outline-secondary");
+    });
+    el.classList.remove("btn-outline-secondary");
+    el.classList.add("btn-primary");
+
+    activeQFilter = el.dataset.filter || "";
+    loadLogs(true);
+}
 
 // ----------------------------------------
 // Načtení statistik
@@ -490,7 +542,10 @@ async function loadLogs(reset = true) {
         currentCursor = null;
         isFirstLoad = true;
         document.getElementById("logsBody").innerHTML =
-            '<tr><td colspan="6" class="text-center text-secondary">Načítám&hellip;</td></tr>';
+            '<tr><td colspan="6" class="text-center py-3">' +
+            '<div class="spinner-border spinner-border-sm text-secondary" role="status"></div>' +
+            '<span class="ms-2 text-secondary" style="font-size:0.85rem;">Načítám&hellip;</span>' +
+            '</td></tr>';
     }
 
     const from = document.getElementById("filterFrom").value;
@@ -499,6 +554,7 @@ async function loadLogs(reset = true) {
     let url = `../api/admin/logs?limit=50`;
     if (from) url += `&from=${from}`;
     if (to)   url += `&to=${to}`;
+    if (activeQFilter) url += `&${activeQFilter}`;
     if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
 
     const res  = await fetch(url);
@@ -596,6 +652,18 @@ async function loadLogs(reset = true) {
 function resetFilter() {
     document.getElementById("filterFrom").value = "";
     document.getElementById("filterTo").value   = "";
+    // Reset quick filtru
+    activeQFilter = "";
+    document.querySelectorAll(".qf-btn").forEach(b => {
+        b.classList.remove("btn-primary");
+        b.classList.add("btn-outline-secondary");
+    });
+    // Aktivovat "Vše"
+    const allBtn = document.querySelector('.qf-btn[data-filter=""]');
+    if (allBtn) {
+        allBtn.classList.remove("btn-outline-secondary");
+        allBtn.classList.add("btn-primary");
+    }
     loadLogs(true);
 }
 

@@ -239,12 +239,20 @@
 
     <div class="panel">
         <h2 id="chartTitle">Návštěvnost v čase</h2>
-        <canvas id="visitsChart" height="120"></canvas>
+        <div id="visitsChartWrap">
+            <div class="text-center py-4" id="visitsChartSpinner">
+                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+            </div>
+            <canvas id="visitsChart" height="120" style="display:none;"></canvas>
+        </div>
     </div>
 
     <div class="panel">
         <h2 id="heatmapTitle">Heatmapa návštěvnosti</h2>
         <div id="heatmapWrap" style="overflow-x:auto;">
+            <div class="text-center py-3" id="heatmapSpinner">
+                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+            </div>
             <div id="heatmap"></div>
         </div>
     </div>
@@ -253,13 +261,19 @@
         <div class="col-md-5">
             <div class="panel">
                 <h2 id="deviceChartTitle">Mobil vs. Desktop</h2>
-                <canvas id="deviceChart" height="220"></canvas>
+                <div class="text-center py-4" id="deviceChartSpinner">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                </div>
+                <canvas id="deviceChart" height="220" style="display:none;"></canvas>
             </div>
         </div>
         <div class="col-md-7">
             <div class="panel">
                 <h2 id="osChartTitle">Operační systémy</h2>
-                <canvas id="osChart" height="220"></canvas>
+                <div class="text-center py-4" id="osChartSpinner">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                </div>
+                <canvas id="osChart" height="220" style="display:none;"></canvas>
             </div>
         </div>
     </div>
@@ -269,7 +283,10 @@
         <h2 id="geoTitle">Odkud přišli návštěvníci <small style="font-size:0.75rem;color:#8b949e;font-weight:400;">(mobilní zařízení)</small></h2>
         <div class="row g-3 align-items-start">
             <div class="col-md-8">
-                <canvas id="worldMap"></canvas>
+                <div class="text-center py-5" id="worldMapSpinner">
+                    <div class="spinner-border text-secondary" role="status"></div>
+                </div>
+                <canvas id="worldMap" style="display:none;"></canvas>
             </div>
             <div class="col-md-4">
                 <div id="countryRanking" style="font-size:0.85rem;margin-bottom:20px;"></div>
