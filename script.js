@@ -383,6 +383,37 @@ function showBotBanner() {
     container.insertBefore(banner, title.nextSibling);
 }
 
+function showReturningBanner() {
+    const banner = document.createElement("div");
+    banner.id = "returningBanner";
+    banner.style.cssText = `
+        background: linear-gradient(135deg, #1a2a1c, #1a231a);
+        border: 1px solid #30363d;
+        border-left: 4px solid #3fb950;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    `;
+    banner.innerHTML = `
+        <span style="font-size:1.4rem;flex-shrink:0;">👋</span>
+        <div>
+            <strong style="color:#3fb950;">Poznali jsme tě</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
+                Dnes jsi tuto stránku navštívil/a už jednou. Rozpoznali jsme tě
+                podle otisku tvého zařízení &ndash; bez cookies, bez přihlášení,
+                bez jakékoliv interakce z tvé strany.
+                <br>Tohle je přesně to, co umí každý web.
+            </p>
+        </div>
+    `;
+    const container = document.querySelector(".container");
+    const title = document.getElementById("title");
+    container.insertBefore(banner, title.nextSibling);
+}
+
 // Grafy a geo funkce jsou v charts.js
 
 // ---------------------------
@@ -618,6 +649,11 @@ async function init() {
 
     // 7) Zobrazení dnešního počtu
     document.getElementById("counter").textContent = stats.today;
+
+    // 8) Returning visitor banner — zobrazit až po API odpovědi (víme jestli byl dnes)
+    if (!isBot && stats.isReturning) {
+        showReturningBanner();
+    }
 
     // 8) Načtení statistik pro grafy
     const fullStats = await loadStats();
