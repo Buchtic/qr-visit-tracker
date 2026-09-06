@@ -473,14 +473,21 @@ function fillSection(id, obj) {
             ? "white-space:normal;word-break:break-word;font-size:0.72rem;font-weight:400;text-align:left;"
             : "";
 
-        li.innerHTML = `
-            <strong>${translateKey(key)}:</strong>
-            <span class="badge bg-${badgeType}"
-                  style="display:inline-block;${extraStyle}"
-                  ${window.bootstrap ? 'data-bs-toggle="tooltip" title="' + tooltip + '"' : ""}>
-                ${value}
-            </span>
-        `;
+        const strong = document.createElement("strong");
+        strong.textContent = translateKey(key) + ":";
+
+        const span = document.createElement("span");
+        span.className = `badge bg-${badgeType}`;
+        span.style.cssText = `display:inline-block;${extraStyle}`;
+        if (window.bootstrap) {
+            span.setAttribute("data-bs-toggle", "tooltip");
+            span.setAttribute("title", tooltip);
+        }
+        span.textContent = value; // textContent zabraňuje XSS
+
+        li.appendChild(strong);
+        li.appendChild(document.createTextNode(" "));
+        li.appendChild(span);
 
         box.appendChild(li);
     }
