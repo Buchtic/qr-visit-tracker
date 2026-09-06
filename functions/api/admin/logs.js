@@ -2,20 +2,28 @@ export async function onRequestGet(context) {
     const { env, request } = context;
 
     const url = new URL(request.url);
-    const dateFrom = url.searchParams.get("from");  // YYYY-MM-DD
-    const dateTo   = url.searchParams.get("to");    // YYYY-MM-DD
-    const cursor   = url.searchParams.get("cursor") || undefined;
-    const limit    = Math.min(parseInt(url.searchParams.get("limit") || "50"), 200);
+    const dateFrom   = url.searchParams.get("from");    // YYYY-MM-DD
+    const dateTo     = url.searchParams.get("to");      // YYYY-MM-DD
+    const cursor     = url.searchParams.get("cursor") || undefined;
+    const limit      = Math.min(parseInt(url.searchParams.get("limit") || "50"), 200);
 
-    // Timestamp hranice pro filtr
+    // Předefinované filtry
+    const filterDevice   = url.searchParams.get("device");    // mobile | desktop | unknown
+    const filterOs       = url.searchParams.get("os");        // android | ios | windows | mac | linux
+    const filterBot      = url.searchParams.get("bot");       // "1" = jen boti, "0" = jen lidi
+    const filterScan     = url.searchParams.get("scan");      // "1" = jen pravděpodobné QR skeny
+    const filterUnique   = url.searchParams.get("unique");    // "1" = deduplikovat per fingerprint
+
+    // Timestamp hranice
     const tsFrom = dateFrom ? new Date(dateFrom + "T00:00:00Z").getTime() : 0;
     const tsTo   = dateTo   ? new Date(dateTo   + "T23:59:59Z").getTime() : Infinity;
 
-    const entries = [];
+    const entries  = [];
+    const seenFps  = new Set(); // pro deduplikaci
     let nextCursor = null;
     let listCursor = cursor;
-    let scanned = 0;
-    const MAX_SCAN = 2000; // pojistka proti timeout
+    let scanned    = 0;
+    const MAX_SCAN = 2000;
 
     do {
         const listResult = await env.VISIT_LOGS.list({
@@ -27,10 +35,9 @@ export async function onRequestGet(context) {
         for (const item of listResult.keys) {
             scanned++;
 
-            // Klíč: visit:TIMESTAMP:fingerprint8
+            // Rychlý timestamp filtr z klíče (bez čtení hodnoty)
             const parts = item.name.split(":");
             const ts = parseInt(parts[1] || "0");
-
             if (ts < tsFrom || ts > tsTo) continue;
 
             const raw = await env.VISIT_LOGS.get(item.name);
@@ -39,12 +46,33 @@ export async function onRequestGet(context) {
             let entry;
             try { entry = JSON.parse(raw); } catch { continue; }
 
+            // --- Filtry ---
+            if (filterDevice && entry.deviceType !== filterDevice) continue;
+            if (filterOs     && entry.os !== filterOs)             continue;
+
+            if (filterBot === "1" && !entry.isBot)  continue;
+            if (filterBot === "0" &&  entry.isBot)  continue;
+
+            if (filterScan === "1" && !entry.likelyScan) continue;
+
+            // Deduplikace per fingerprint (zachová jen první záznam)
+            if (filterUnique === "1") {
+                const fp = entry.fingerprint || item.name;
+                if (seenFps.has(fp)) continue;
+                seenFps.add(fp);
+            }
+
             entries.push({
-                key: item.name,
-                timestamp: entry.timestamp,
-                deviceType: entry.deviceType || "unknown",
-                os: entry.os || "unknown",
-                isBot: entry.isBot || false,
+                key:        item.name,
+                timestamp:  entry.timestamp,
+                deviceType: entry.deviceType  || "unknown",
+                os:         entry.os          || "unknown",
+                isBot:      entry.isBot       || false,
+                likelyScan: entry.likelyScan  || false,
+                country:    entry.country     || "",
+                city:       entry.city        || "",
+                asOrg:      entry.asOrg       || "",
+                referrer:   entry.referrer    || "",
                 fingerprint: entry.fingerprint
                     ? entry.fingerprint.slice(0, 16) + "…"
                     : "–",
@@ -52,22 +80,19 @@ export async function onRequestGet(context) {
             });
 
             if (entries.length >= limit) {
-                // Uložit cursor pro další stránku
                 nextCursor = listResult.list_complete ? null : listResult.cursor;
                 break;
             }
         }
 
         if (entries.length >= limit || scanned >= MAX_SCAN) break;
-
         listCursor = listResult.list_complete ? null : listResult.cursor;
     } while (listCursor);
 
-    // Seřadit od nejnovějšího
     entries.sort((a, b) => b.timestamp - a.timestamp);
 
     return new Response(
-        JSON.stringify({ entries, nextCursor, total: entries.length }),
+        JSON.stringify({ entries, nextCursor, total: entries.length, scanned }),
         { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
 }
