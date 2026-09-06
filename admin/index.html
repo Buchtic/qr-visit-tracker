@@ -318,20 +318,6 @@ async function loadStats() {
     renderWorldMap(data.countryBreakdown || {});
 }
 
-        document.getElementById("mMobile").textContent = mob;
-        document.getElementById("mDesktop").textContent = desk;
-        document.getElementById("mMobilePct").textContent =
-            Math.round(mob / sum * 100) + " % z mobilů";
-        document.getElementById("mDesktopPct").textContent =
-            Math.round(desk / sum * 100) + " % z desktopů";
-    }
-
-    renderLineChart(data.stats || []);
-    renderHeatmap(data.stats || []);
-    renderDeviceChart(data.deviceBreakdown);
-    renderOsChart(data.osBreakdown);
-}
-
 // ----------------------------------------
 // Grafy
 // ----------------------------------------
@@ -912,9 +898,6 @@ function fillSection(id, obj) {
                 ${value}
             </span>
         `;
-
-        box.appendChild(li);
-    }
 
         box.appendChild(li);
     }
