@@ -101,7 +101,7 @@
             <li>Může spustit stažení škodlivého souboru.</li>
             <li>Může tě přimět k přihlášení na falešnou službu / přihlášení cizí osoby k vašemu účtu.</li>
             <li>Může být nalepený přes původní legitimní QR kód.</li>
-            <li><span class="danger">Nemáš šanci poznat, kam vede, dokud už není pozdě.</span></li>
+            <li><span class="danger">Nemáš šanci poznat, kam vede, dokud už není pozdě</span> &ndash; <a href="#faq-preview" onclick="openFaqPreview(event)" style="color:#f85149;font-size:0.9em;">přinejmenším ne na Androidu</a>.</li>
         </ul>
     </div>
 
@@ -286,7 +286,7 @@
                 <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                     <div class="accordion-body" style="color:#8b949e;">
                         Fingerprint je unikátní otisk tvého zařízení a prohlížeče. Vzniká kombinací desítek
-                        technických parametrů — rozlišení displeje, jazyk, časová zóna, typ GPU, počet CPU vláken
+                        technických parametrů &ndash; rozlišení displeje, jazyk, časová zóna, typ GPU, počet CPU vláken
                         a dalších. Žádný z těchto parametrů sám o sobě nestačí k identifikaci, ale jejich
                         kombinace je statisticky velmi unikátní. Výsledek se zahashuje algoritmem SHA-256
                         na 64znakový řetězec. Tento otisk neobsahuje žádné osobní údaje, ale umožňuje
@@ -308,7 +308,7 @@
                         Detekce probíhá ve třech vrstvách přímo v prohlížeči. Nejprve se zkusí moderní
                         User-Agent Client Hints API, které poskytuje přesnou informaci. Pokud není dostupné,
                         analyzuje se User Agent řetězec (obsahuje slova jako „Android" nebo „iPhone").
-                        Jako záloha se kontroluje počet dotykových bodů — zařízení s více než jedním
+                        Jako záloha se kontroluje počet dotykových bodů &ndash; zařízení s více než jedním
                         bodem je pravděpodobně mobilní. Výsledek je vždy jen odhad, ne absolutní pravda.
                         Tablety mohou být klasifikovány různě podle nastavení prohlížeče.
                     </div>
@@ -320,13 +320,13 @@
                     <button class="accordion-button collapsed" type="button"
                             data-bs-toggle="collapse" data-bs-target="#faq3"
                             style="background:transparent;color:inherit;box-shadow:none;">
-                        Proč mohou být data o OS nepřesná — zejména u Apple zařízení?
+                        Proč mohou být data o OS nepřesná &ndash; zejména u Apple zařízení?
                     </button>
                 </h3>
                 <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                     <div class="accordion-body" style="color:#8b949e;">
                         Safari od verze 13 záměrně zamrazilo přesnou verzi systému v User Agentu.
-                        Jde o ochranu soukromí — přesná verze OS je jeden ze signálů pro fingerprinting.
+                        Jde o ochranu soukromí &ndash; přesná verze OS je jeden ze signálů pro fingerprinting.
                         V praxi to znamená, že všichni Safari uživatelé vypadají pro web téměř identicky.
                         Základní rozlišení iOS vs. macOS vs. Windows je obvykle zachováno,
                         přesné verze systému jsou ale nespolehlivé u všech Apple zařízení.
@@ -344,7 +344,7 @@
                 </h3>
                 <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                     <div class="accordion-body" style="color:#8b949e;">
-                        Roboti jsou automatizované programy, které procházejí weby — vyhledávací crawlery,
+                        Roboti jsou automatizované programy, které procházejí weby &ndash; vyhledávací crawlery,
                         bezpečnostní skenery nebo nástroje pro testování. Jejich návštěvy by zkreslily
                         statistiky, protože nepředstavují skutečné lidi. Detekujeme je pomocí několika
                         signálů: příznak <code>navigator.webdriver</code> (přítomný u Selenium a Puppeteer),
@@ -366,12 +366,50 @@
                 <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                     <div class="accordion-body" style="color:#8b949e;">
                         Před naskenováním si zkontroluj, zda QR kód není přelepen jiným.
-                        Pokud ti prohlížeč ukáže URL před otevřením, přečti ji — podvodné stránky
+                        Pokud ti prohlížeč ukáže URL před otevřením, přečti ji &ndash; podvodné stránky
                         mají často podobné, ale jiné domény (např. <code>paypa1.com</code> místo <code>paypal.com</code>).
                         Použij prohlížeč v anonymním režimu pro neznámé QR kódy. Pokud chceš minimalizovat
                         fingerprinting obecně, pomáhá Firefox s rozšířením uBlock Origin nebo prohlížeč
                         Brave, které aktivně blokují fingerprintingové techniky. Žádné řešení ale
-                        není 100% — tato stránka ukazuje, co lze zjistit i bez cookies a bez souhlasu.
+                        není 100% &ndash; tato stránka ukazuje, co lze zjistit i bez cookies a bez souhlasu.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item" id="faq-preview" style="background:transparent;border-color:#30363d;">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq7"
+                            style="background:transparent;color:inherit;box-shadow:none;">
+                        Lze poznat, kam QR kód vede, ještě před naskenováním?
+                    </button>
+                </h3>
+                <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body" style="color:#8b949e;">
+                        <p style="margin-top:0;">Záleží na zařízení a aplikaci, kterou ke skenování používáš.</p>
+
+                        <p><strong style="color:#3fb950;">🍎 iPhone (iOS)</strong><br>
+                        Nativní fotoaparát na iPhonu URL zobrazí automaticky jako notifikaci ještě před tím,
+                        než na ni klepneš &ndash; stačí namířit na kód. Vidíš tedy doménu, na kterou QR míří,
+                        a můžeš se rozhodnout, zda ji otevřeš. Je to jedna z mála situací, kdy iOS uživatelé
+                        mají bezpečnostní výhodu oproti Androidu.</p>
+
+                        <p><strong style="color:#f0883e;">🤖 Android</strong><br>
+                        Nativní fotoaparát na Androidu URL ve většině případů přímo zobrazí a otevře
+                        &ndash; bez možnosti ji nejdřív přečíst. Chování se liší výrobce od výrobce
+                        (Samsung, Google Pixel, Xiaomi&hellip;) a verze systému. Obecně platí,
+                        že Android tuto ochranu standardně nenabízí.</p>
+
+                        <p><strong style="color:#58a6ff;">🔒 Jak se chránit na Androidu</strong><br>
+                        Použij specializovanou aplikaci pro skenování QR kódů, která URL zobrazí
+                        před otevřením &ndash; například <em>QR &amp; Barcode Scanner</em> od Gamma Play
+                        nebo Google Lens (zobrazí URL, ale rovnou nabídne otevřít).
+                        Alternativně můžeš v prohlížeči Chrome na Androidu použít funkci
+                        <em>Google Lens</em> přímo v adresním řádku.</p>
+
+                        <p style="margin-bottom:0;"><strong style="color:#8b949e;">⚠️ Pozor na zkrácené URL</strong><br>
+                        I když URL vidíš, může být zkrácená přes bit.ly, tinyurl nebo podobné služby.
+                        Samotný náhled domény pak nestačí &ndash; pod zkrácenou URL se může skrývat cokoliv.</p>
                     </div>
                 </div>
             </div>
@@ -386,18 +424,34 @@
                 </h3>
                 <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                     <div class="accordion-body" style="color:#8b949e;">
-                        Ano — stránka neukládá žádné cookies, nepoužívá Google Analytics ani jiné
+                        Ano &ndash; stránka neukládá žádné cookies, nepoužívá Google Analytics ani jiné
                         trackery třetích stran. Fingerprint se vytváří a hashuje výhradně v prohlížeči,
                         na server se odesílá jen výsledný hash (ne raw data). Hash neumožňuje zpětně
                         rekonstruovat původní hodnoty. Ukládaná data (hash + typ zařízení + timestamp)
                         neobsahují žádné osobní údaje ve smyslu GDPR. Cílem projektu je naopak
-                        ukázat, co weby <em>mohou</em> dělat — a motivovat k větší obezřetnosti.
+                        ukázat, co weby <em>mohou</em> dělat &ndash; a motivovat k větší obezřetnosti.
                     </div>
                 </div>
             </div>
 
         </div>
     </div>
+
+<script>
+// Otevřít FAQ accordion a scrollovat na něj při kliknutí z odkazu v textu
+function openFaqPreview(e) {
+    e.preventDefault();
+    const target = document.getElementById("faq7");
+    const btn = document.querySelector('[data-bs-target="#faq7"]');
+    if (target && btn && window.bootstrap) {
+        const bsCollapse = new bootstrap.Collapse(target, { toggle: false });
+        bsCollapse.show();
+        setTimeout(() => {
+            document.getElementById("faq-preview").scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+    }
+}
+</script>
 
     <footer class="text-center mt-5 mb-3" style="color:#8b949e;">
         <hr style="border-color:#30363d;">

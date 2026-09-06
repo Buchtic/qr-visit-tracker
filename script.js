@@ -697,14 +697,23 @@ function fillSection(id, obj) {
 
         const badgeType = getBadgeType(key);
         const tooltip = getTooltip(key).replace(/"/g, "'");
+        // UA a podobné dlouhé hodnoty dostanou font-size menší a povolíme zalamování
+        const isLong = String(value).length > 60;
+        const extraStyle = isLong
+            ? "white-space:normal;word-break:break-word;font-size:0.72rem;font-weight:400;text-align:left;"
+            : "";
 
         li.innerHTML = `
             <strong>${translateKey(key)}:</strong>
-            <span class="badge bg-${badgeType}" 
+            <span class="badge bg-${badgeType}"
+                  style="display:inline-block;${extraStyle}"
                   ${window.bootstrap ? 'data-bs-toggle="tooltip" title="' + tooltip + '"' : ""}>
                 ${value}
             </span>
         `;
+
+        box.appendChild(li);
+    }
 
         box.appendChild(li);
     }
