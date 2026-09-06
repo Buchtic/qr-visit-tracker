@@ -422,6 +422,13 @@ function getTooltip(key) {
 // ----------------------------------------
 async function loadLogs(reset = true) {
     if (reset) {
+        currentCursor = null;
+        isFirstLoad = true;
+        document.getElementById("logsBody").innerHTML =
+            '<tr><td colspan="6" class="text-center text-secondary">Načítám&hellip;</td></tr>';
+    }
+
+    const from = document.getElementById("filterFrom").value;
     const to   = document.getElementById("filterTo").value;
 
     let url = `../api/admin/logs?limit=50`;
@@ -453,42 +460,63 @@ async function loadLogs(reset = true) {
                        : e.deviceType === "desktop" ? "badge-desktop"
                        : "badge-unknown";
 
-        const botBadge = e.isBot
-            ? `<span class="badge badge-bot">🤖 bot</span>`
-            : `<span style="color:#8b949e;font-size:0.75rem;">–</span>`;
-
         const osIcon = {
             android: "🤖", ios: "🍎", windows: "🪟", mac: "🍏", linux: "🐧"
         }[e.os] || "❓";
 
-        const rowId = `row-${e.timestamp}-${Math.random().toString(36).slice(2,6)}`;
+        const rowId  = `row-${e.timestamp}-${Math.random().toString(36).slice(2,6)}`;
         const jsonId = `json-${rowId}`;
 
+        // Hlavní řádek
         const tr = document.createElement("tr");
         tr.setAttribute("data-bs-toggle", "collapse");
-        tr.setAttribute("data-bs-target", `#${jsonId}`);
-        tr.innerHTML = `
-            <td>
-                <div style="font-size:0.8rem;">${dateStr}</div>
-                <div style="color:#8b949e;font-size:0.75rem;">${timeStr}</div>
-            </td>
-            <td><span class="badge ${devBadge}">${e.deviceType}</span></td>
-            <td>${osIcon} ${e.os}</td>
-            <td>${botBadge}</td>
-            <td><code style="font-size:0.75rem;color:#8b949e;">${e.fingerprint}</code></td>
-            <td><i class="bi bi-chevron-down" style="color:#8b949e;font-size:0.75rem;"></i></td>
-        `;
+        tr.setAttribute("data-bs-target", "#" + jsonId);
+
+        const tdTime = document.createElement("td");
+        tdTime.innerHTML = `<div style="font-size:0.8rem;">${dateStr}</div><div style="color:#8b949e;font-size:0.75rem;">${timeStr}</div>`;
+
+        const tdDev = document.createElement("td");
+        tdDev.innerHTML = `<span class="badge ${devBadge}">${e.deviceType}</span>`;
+
+        const tdOs = document.createElement("td");
+        tdOs.textContent = osIcon + " " + e.os;
+
+        const tdBot = document.createElement("td");
+        if (e.isBot) {
+            tdBot.innerHTML = `<span class="badge badge-bot">🤖 bot</span>`;
+        } else {
+            tdBot.innerHTML = `<span style="color:#8b949e;font-size:0.75rem;">–</span>`;
+        }
+
+        const tdFp = document.createElement("td");
+        const code = document.createElement("code");
+        code.style.cssText = "font-size:0.75rem;color:#8b949e;";
+        code.textContent = e.fingerprint;
+        tdFp.appendChild(code);
+
+        const tdChevron = document.createElement("td");
+        tdChevron.innerHTML = `<i class="bi bi-chevron-down" style="color:#8b949e;font-size:0.75rem;"></i>`;
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdDev);
+        tr.appendChild(tdOs);
+        tr.appendChild(tdBot);
+        tr.appendChild(tdFp);
+        tr.appendChild(tdChevron);
         tbody.appendChild(tr);
 
-        // Raw JSON řádek (collapse)
+        // Raw JSON řádek — textContent zabraňuje XSS i předčasnému ukončení script bloku
         const jsonTr = document.createElement("tr");
         jsonTr.className = "collapse";
         jsonTr.id = jsonId;
-        jsonTr.innerHTML = `
-            <td colspan="6" style="padding:0 12px 12px;">
-                <div class="raw-json">${JSON.stringify(e.raw, null, 2)}</div>
-            </td>
-        `;
+        const jsonTd = document.createElement("td");
+        jsonTd.setAttribute("colspan", "6");
+        jsonTd.style.cssText = "padding:0 12px 12px;";
+        const jsonDiv = document.createElement("div");
+        jsonDiv.className = "raw-json";
+        jsonDiv.textContent = JSON.stringify(e.raw, null, 2);
+        jsonTd.appendChild(jsonDiv);
+        jsonTr.appendChild(jsonTd);
         tbody.appendChild(jsonTr);
     }
 
