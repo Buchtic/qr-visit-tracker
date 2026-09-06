@@ -330,32 +330,6 @@ let currentCursor = null;
 let isFirstLoad = true;
 
 // ----------------------------------------
-// ASN žebříček
-// ----------------------------------------
-function renderAsnRanking(ranking) {
-    const el = document.getElementById("asnRanking");
-    if (!el) return;
-    if (!ranking || ranking.length === 0) {
-        el.innerHTML = '<p style="color:#8b949e;font-size:0.8rem;">Zatím žádná data.</p>';
-        return;
-    }
-    const max = ranking[0]?.count || 1;
-    el.innerHTML = ranking.slice(0, 15).map((item, i) => `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
-            <span style="font-size:0.72rem;color:#8b949e;width:16px;text-align:right;">${i + 1}</span>
-            <div style="flex:1;min-width:0;">
-                <div style="font-size:0.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                     title="${item.org}">${item.org}</div>
-                <div style="background:#21262d;border-radius:2px;height:4px;margin-top:3px;overflow:hidden;">
-                    <div style="height:100%;background:#3fb950;border-radius:2px;width:${Math.round(item.count/max*100)}%"></div>
-                </div>
-            </div>
-            <span style="font-size:0.8rem;font-weight:600;min-width:24px;text-align:right;flex-shrink:0;">${item.count}</span>
-        </div>
-    `).join("");
-}
-
-// ----------------------------------------
 // Načtení statistik
 // ----------------------------------------
 async function loadStats() {

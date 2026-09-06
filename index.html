@@ -27,27 +27,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4.3.0/build/index.umd.min.js"></script>
-
-<!-- Cache busting pro lokální soubory — změňte BUILD po každé úpravě CSS/JS -->
-<script>
-(function() {
-    var BUILD = "20260906-01";
-    // Pouze CSS a charts.js — script.js se načítá na konci body
-    ['styles.css', 'charts.js'].forEach(function(f) {
-        var ext = f.split('.').pop();
-        var el = document.createElement(ext === 'css' ? 'link' : 'script');
-        if (ext === 'css') {
-            el.rel = 'stylesheet';
-            el.href = f + '?v=' + BUILD;
-        } else {
-            el.src = f + '?v=' + BUILD;
-        }
-        document.head.appendChild(el);
-    });
-    // Uložit BUILD pro použití při načtení script.js
-    window.__BUILD = BUILD;
-})();
-</script>
+<script src="charts.js"></script>
+<link rel="stylesheet" href="styles.css">
 
 </head>
 <body class="dark">
@@ -291,11 +272,16 @@
                 <canvas id="worldMap"></canvas>
             </div>
             <div class="col-md-4">
-                <div id="countryRanking" style="font-size:0.85rem;"></div>
+                <div id="countryRanking" style="font-size:0.85rem;margin-bottom:20px;"></div>
+                <h3 style="font-size:0.9rem;margin-bottom:8px;">
+                    <i class="bi bi-wifi me-1" style="color:#3fb950;"></i>
+                    <span id="ispTitle">Top poskytovatelé</span>
+                </h3>
+                <div id="asnRanking" style="font-size:0.85rem;"></div>
             </div>
         </div>
         <p id="geoNote" style="font-size:0.75rem;color:#8b949e;margin:12px 0 0;">
-            Geolokace je určena podle IP adresy přes Cloudflare &ndash; přesnost na úrovni státu.
+            Geolokace a poskytovatel internetu jsou určeny podle IP adresy přes Cloudflare &ndash; přesnost na úrovni státu.
         </p>
     </div>
 
@@ -596,13 +582,6 @@ function openFaqPreview(e) {
 
 </div>
 
-<script>
-// Načíst script.js s cache busting verzí až je DOM hotový
-(function() {
-    var s = document.createElement('script');
-    s.src = 'script.js?v=' + (window.__BUILD || '1');
-    document.body.appendChild(s);
-})();
-</script>
+<script src="script.js"></script>
 </body>
 </html>

@@ -46,6 +46,8 @@ function applyEnglishTexts() {
         document.getElementById("deviceChartTitle").textContent = "Mobile vs. Desktop";
     if (document.getElementById("osChartTitle"))
         document.getElementById("osChartTitle").textContent = "Operating Systems";
+    if (document.getElementById("ispTitle"))
+        document.getElementById("ispTitle").textContent = "Top providers";
     if (document.getElementById("faqTitle"))
         document.getElementById("faqTitle").textContent = "FAQ";
     if (document.getElementById("totalMobileLabel"))
@@ -740,6 +742,9 @@ async function init() {
     renderOsChart(fullStats.osBreakdown);
     renderCountryRanking(fullStats.countryRanking || []);
     renderWorldMap(fullStats.countryBreakdown || {});
+    if (typeof renderAsnRanking === "function") {
+        renderAsnRanking(fullStats.asnRanking || []);
+    }
 }
 
 // Pomocné funkce pro plnění panelů
