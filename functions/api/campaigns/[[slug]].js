@@ -1,7 +1,15 @@
 // functions/api/campaigns/[[slug]].js
-// Zachytí:  GET  /api/campaigns           → seznam
-//           GET  /api/campaigns/{slug}    → statistiky kampaně
-//           POST /api/campaigns           → vytvořit kampaň
+//
+// Veřejné endpointy (bez auth):
+//   GET  /api/campaigns/{slug}   → statistiky kampaně (pro /kampan/ stránku)
+//
+// Admin endpointy — chráněné CF Access (/admin/*):
+//   GET  /api/campaigns          → seznam všech kampaní  ← NOVĚ jen přes admin token
+//   POST /api/campaigns          → vytvořit kampaň       ← NOVĚ jen přes admin token
+//
+// Ochrana před neautorizovaným přístupem k admin operacím:
+// Požadavek musí obsahovat hlavičku CF-Access-Jwt-Assertion (nastavuje CF Access automaticky)
+// nebo specifický admin token v hlavičce X-Admin-Token.
 
 function generateSlug() {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -10,16 +18,46 @@ function generateSlug() {
     return Array.from(arr).map(b => chars[b % chars.length]).join("");
 }
 
+// Ověřit že request přišel přes CF Access (nebo má admin token)
+function isAdminRequest(request, env) {
+    // CF Access nastaví tuto hlavičku po úspěšném přihlášení
+    const cfJwt = request.headers.get("CF-Access-Jwt-Assertion");
+    if (cfJwt) return true;
+
+    // Záložní: vlastní admin token (nastav jako CF Pages secret: ADMIN_TOKEN)
+    const adminToken = request.headers.get("X-Admin-Token");
+    if (env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN) return true;
+
+    return false;
+}
+
+// Escapovat HTML pro bezpečné vložení do innerHTML
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 export async function onRequestGet(context) {
     const { env, request } = context;
     const url = new URL(request.url);
 
-    // Extrahovat slug z URL: /api/campaigns/{slug}
     const parts = url.pathname.replace(/\/+$/, "").split("/");
     const slug = parts[parts.length - 1] === "campaigns" ? null : parts[parts.length - 1];
 
     if (slug) {
-        // --- Statistiky konkrétní kampaně (public) ---
+        // --- Veřejné: statistiky konkrétní kampaně ---
+        // Validace slug formátu — jen alfanumerické, max 64 znaků
+        if (!/^[a-z0-9]{1,64}$/.test(slug)) {
+            return new Response(JSON.stringify({ error: "Invalid slug" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            });
+        }
+
         const meta = await env.CAMPAIGNS.get(`campaign:${slug}`);
         if (!meta) {
             return new Response(JSON.stringify({ error: "Campaign not found" }), {
@@ -47,7 +85,6 @@ export async function onRequestGet(context) {
             desktop: parseInt(await env.CAMPAIGNS.get(`campaign-device:${slug}:desktop`) || "0")
         };
 
-        // Country breakdown
         const countryBreakdown = {};
         let cursor;
         do {
@@ -63,43 +100,73 @@ export async function onRequestGet(context) {
             .map(([cc, count]) => ({ cc, count }))
             .sort((a, b) => b.count - a.count);
 
+        // Vrátit jen escapovaná data (ochrana i pro JSON konzumentů)
         return new Response(
-            JSON.stringify({ slug, ...campaign, total, stats, deviceBreakdown, countryBreakdown, countryRanking }),
+            JSON.stringify({
+                slug,
+                name: escapeHtml(campaign.name),
+                description: escapeHtml(campaign.description || ""),
+                startDate: campaign.startDate,
+                createdAt: campaign.createdAt,
+                total, stats, deviceBreakdown, countryBreakdown, countryRanking
+            }),
             { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
         );
     }
 
-    // --- Seznam všech kampaní (admin) ---
+    // --- Admin: seznam všech kampaní — vyžaduje auth ---
+    if (!isAdminRequest(request, env)) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+
     const list = await env.CAMPAIGNS.list({ prefix: "campaign:", limit: 500 });
     const campaigns = [];
     for (const item of list.keys) {
-        if (item.name.split(":").length !== 2) continue; // přeskočit sub-klíče
+        if (item.name.split(":").length !== 2) continue;
         const raw = await env.CAMPAIGNS.get(item.name);
         if (!raw) continue;
         const s = item.name.replace("campaign:", "");
-        const meta = JSON.parse(raw);
+        const m = JSON.parse(raw);
         const total   = parseInt(await env.CAMPAIGNS.get(`campaign-hits:${s}`) || "0");
         const mobile  = parseInt(await env.CAMPAIGNS.get(`campaign-device:${s}:mobile`)  || "0");
         const desktop = parseInt(await env.CAMPAIGNS.get(`campaign-device:${s}:desktop`) || "0");
-        campaigns.push({ slug: s, ...meta, total, mobile, desktop });
+        campaigns.push({
+            slug: s,
+            name: escapeHtml(m.name),
+            description: escapeHtml(m.description || ""),
+            startDate: m.startDate,
+            createdAt: m.createdAt,
+            total, mobile, desktop
+        });
     }
     campaigns.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return new Response(
         JSON.stringify({ campaigns }),
-        { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        { headers: { "Content-Type": "application/json" } }
     );
 }
 
 export async function onRequestPost(context) {
     const { request, env } = context;
 
+    // POST vyžaduje admin auth
+    if (!isAdminRequest(request, env)) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+
     let body;
     try { body = await request.json(); } catch {
         return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
     }
 
-    const name = (body.name || "").trim();
+    const name = (body.name || "").trim().slice(0, 200);
     if (!name) {
         return new Response(JSON.stringify({ error: "Name is required" }), {
             status: 400,
@@ -107,11 +174,16 @@ export async function onRequestPost(context) {
         });
     }
 
+    // Validace startDate formátu
+    const startDate = body.startDate && /^\d{4}-\d{2}-\d{2}$/.test(body.startDate)
+        ? body.startDate
+        : new Date().toISOString().slice(0, 10);
+
     const slug = generateSlug();
     const campaign = {
         name,
-        description: (body.description || "").trim(),
-        startDate: body.startDate || new Date().toISOString().slice(0, 10),
+        description: (body.description || "").trim().slice(0, 500),
+        startDate,
         createdAt: new Date().toISOString()
     };
 
@@ -119,7 +191,7 @@ export async function onRequestPost(context) {
 
     return new Response(
         JSON.stringify({ slug, ...campaign }),
-        { status: 201, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        { status: 201, headers: { "Content-Type": "application/json" } }
     );
 }
 
@@ -128,7 +200,7 @@ export async function onRequestOptions() {
         headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type"
+            "Access-Control-Allow-Headers": "Content-Type, X-Admin-Token"
         }
     });
 }
