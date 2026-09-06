@@ -77,8 +77,27 @@ export async function onRequestGet(context) {
     const botToday = parseInt(await env.VISIT_COUNTER.get(`bot-${todayKey}`) || "0");
     const botBreakdown = { total: botTotal, today: botToday };
 
+    // ASN ranking — top sítě/ISP
+    const asnBreakdown = [];
+    let asnCursor;
+    do {
+        const asnList = await env.VISIT_COUNTER.list({ prefix: "asn-", cursor: asnCursor, limit: 1000 });
+        for (const item of asnList.keys) {
+            // Přeskočit org klíče (asn-org-*)
+            if (item.name.startsWith("asn-org-")) continue;
+            const asnNum = item.name.replace("asn-", "");
+            const count  = parseInt(await env.VISIT_COUNTER.get(item.name) || "0");
+            const org    = await env.VISIT_COUNTER.get(`asn-org-${asnNum}`) || asnNum;
+            asnBreakdown.push({ asn: asnNum, org, count });
+        }
+        asnCursor = asnList.list_complete ? null : asnList.cursor;
+    } while (asnCursor);
+
+    asnBreakdown.sort((a, b) => b.count - a.count);
+    const asnRanking = asnBreakdown.slice(0, 20); // top 20 ISP
+
     return new Response(
-        JSON.stringify({ today, total, stats, deviceBreakdown, deviceToday, osBreakdown, countryBreakdown, countryRanking, botBreakdown }),
+        JSON.stringify({ today, total, stats, deviceBreakdown, deviceToday, osBreakdown, countryBreakdown, countryRanking, botBreakdown, asnRanking }),
         { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
 }

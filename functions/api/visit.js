@@ -22,6 +22,21 @@ export async function onRequestPost(context) {
     const rawCountry = (request.cf?.country || "").toUpperCase();
     const country = /^[A-Z]{2}$/.test(rawCountry) ? rawCountry : "unknown";
 
+    // Rozšířená CF geodata — zdarma, bez externího API
+    const city         = (request.cf?.city         || "").slice(0, 100);
+    const region       = (request.cf?.region       || "").slice(0, 100);
+    const timezone     = (request.cf?.timezone     || "").slice(0, 50);
+    const asn          = request.cf?.asn ? String(request.cf.asn) : "";
+    const asOrg        = (request.cf?.asOrganization || "").slice(0, 100);
+    const isEU         = request.cf?.isEUCountry === "1";
+
+    // Detekce datacenterového přístupu přes ASN
+    // Cloudflare, AWS, Azure, Google, Oracle, DigitalOcean atd.
+    const DATACENTER_ORGS = /cloudflare|amazon|microsoft|google|digitalocean|oracle|linode|vultr|ovh|hetzner|contabo|fastly|akamai/i;
+    const isCloudy = DATACENTER_ORGS.test(asOrg);
+    // Kombinace s existující bot detekcí — datacenter origin = zvýšené riziko
+    const isLikelyBot = body.isBot === true || isCloudy;
+
     // Validace fingerprint — musí být hex string 64 znaků (SHA-256)
     if (!fingerprint || typeof fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(fingerprint)) {
         return new Response(JSON.stringify({ error: "Invalid fingerprint" }), {
@@ -37,8 +52,14 @@ export async function onRequestPost(context) {
         fingerprint,
         deviceType,
         os,
-        isBot,
+        isBot: isLikelyBot,
         country,
+        city,
+        region,
+        timezone,
+        asn,
+        asOrg,
+        isEU,
         utm_campaign: utmCampaign || null,
         timestamp: Date.now()
     });
@@ -48,8 +69,8 @@ export async function onRequestPost(context) {
         { expirationTtl: 60 * 60 * 24 * 90 } // 90 dní
     );
 
-    // Boti se nezapočítají do hlavních čítačů, ale sledujeme jejich počet
-    if (isBot) {
+    // Boti + datacenterové přístupy se nezapočítávají do hlavních čítačů
+    if (isLikelyBot) {
         const botTotal = parseInt(await env.VISIT_COUNTER.get("bot-total") || "0");
         const botToday = parseInt(await env.VISIT_COUNTER.get(`bot-${todayKey}`) || "0");
         await env.VISIT_COUNTER.put("bot-total", String(botTotal + 1));
@@ -87,6 +108,15 @@ export async function onRequestPost(context) {
             const countryTotal = parseInt(await env.VISIT_COUNTER.get(countryKey) || "0");
             await env.VISIT_COUNTER.put(countryKey, String(countryTotal + 1));
 
+            // ASN čítač (top ISP/sítě)
+            if (asn) {
+                const asnKey = `asn-${asn}`;
+                const asnCount = parseInt(await env.VISIT_COUNTER.get(asnKey) || "0");
+                await env.VISIT_COUNTER.put(asnKey, String(asnCount + 1));
+                // Uložit i název organizace (přepsat — vždy stejný pro dané ASN)
+                if (asOrg) await env.VISIT_COUNTER.put(`asn-org-${asn}`, asOrg);
+            }
+
             // UTM kampaň
             if (utmCampaign && env.CAMPAIGNS) {
                 const campaignMeta = await env.CAMPAIGNS.get(`campaign:${utmCampaign}`);
@@ -103,17 +133,20 @@ export async function onRequestPost(context) {
             }
         }
 
-        // Vrátit aktuální hodnoty včetně isReturning flagu
+        // Vrátit aktuální hodnoty + CF geodata pro zobrazení návštěvníkovi
         const today = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
         const total = parseInt(await env.VISIT_COUNTER.get("total") || "0");
 
         return new Response(
-            JSON.stringify({ today, total, isReturning }),
+            JSON.stringify({
+                today, total, isReturning,
+                geo: { country, city, region, asOrg, isEU }
+            }),
             { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
         );
     }
 
-    // Bot response (bez isReturning)
+    // Bot response
     const today = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
     const total = parseInt(await env.VISIT_COUNTER.get("total") || "0");
 
