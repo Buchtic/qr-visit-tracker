@@ -669,8 +669,12 @@ async function loadCampaigns() {
                                     </div>` : ""}
                                 </td>
                                 <td style="white-space:nowrap;">
+                                    <a href="${base}/kampan/${c.slug}" target="_blank"
+                                       class="btn btn-sm btn-outline-secondary" title="Veřejné výsledky kampaně">
+                                        <i class="bi bi-bar-chart-line"></i>
+                                    </a>
                                     <a href="${base}/?utm_campaign=${c.slug}" target="_blank"
-                                       class="btn btn-sm btn-outline-secondary" title="Otevřít stránku kampaně">
+                                       class="btn btn-sm btn-outline-secondary ms-1" title="Otevřít stránku kampaně">
                                         <i class="bi bi-box-arrow-up-right"></i>
                                     </a>
                                     <button class="btn btn-sm btn-outline-secondary ms-1"
