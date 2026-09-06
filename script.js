@@ -385,6 +385,34 @@ function showBotBanner() {
 
 // Grafy a geo funkce jsou v charts.js
 
+// ---------------------------
+// Campaign badge
+// ---------------------------
+async function loadCampaignBadge(slug) {
+    try {
+        const res = await fetch(`api/campaigns/${slug}`);
+        if (!res.ok) return; // neexistující slug — nic nezobrazíme
+
+        const data = await res.json();
+        if (!data.name) return;
+
+        const badge = document.getElementById("campaignBadge");
+        const nameEl = document.getElementById("campaignBadgeName");
+        const descEl = document.getElementById("campaignBadgeDesc");
+
+        nameEl.textContent = data.name;
+
+        if (data.description) {
+            descEl.textContent = data.description;
+            descEl.style.display = "";
+        }
+
+        badge.style.display = "";
+    } catch {
+        // Tiché selhání — badge prostě nezobrazíme
+    }
+}
+
 
 /*
 function renderFingerprint(data) {
@@ -560,7 +588,12 @@ async function init() {
     const isBot       = detectBot();
     const utmCampaign = new URLSearchParams(location.search).get("utm_campaign") || "";
 
-    // 3) Banner podle typu návštěvníka
+    // 3) Campaign badge — načíst metadata a zobrazit pokud máme slug
+    if (utmCampaign) {
+        loadCampaignBadge(utmCampaign);
+    }
+
+    // 4) Banner podle typu návštěvníka
     if (isBot) {
         showBotBanner();
     } else if (deviceType === "desktop") {

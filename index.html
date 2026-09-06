@@ -29,6 +29,33 @@
         <button id="themeToggle" class="btn btn-outline-light btn-sm">☼</button>
     </div>
 	<h1 id="title" class="text-center">Neskenuj náhodné QR kódy</h1>
+
+    <!-- Campaign badge — zobrazí se jen když přijdeš přes utm_campaign -->
+    <div id="campaignBadge" style="display:none;" class="text-center mb-3">
+        <div style="
+            display:inline-block;
+            background:linear-gradient(135deg,#1c2a3a,#1a2332);
+            border:1px solid #30363d;
+            border-left:4px solid #58a6ff;
+            border-radius:8px;
+            padding:10px 18px;
+            max-width:600px;
+            text-align:left;
+        ">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <i class="bi bi-qr-code" style="color:#58a6ff;font-size:1.1rem;flex-shrink:0;"></i>
+                <div id="campaignBadgeContent">
+                    <div style="font-size:0.75rem;color:#8b949e;">Otevřel jsi tuto stránku přes kampaň</div>
+                    <div id="campaignBadgeName" style="font-weight:600;color:#c9d1d9;font-size:0.95rem;"></div>
+                    <div id="campaignBadgeDesc" style="font-size:0.78rem;color:#8b949e;margin-top:2px;display:none;"></div>
+                </div>
+                <!-- Místo pro logo kampaně v budoucnu -->
+                <div id="campaignLogo" style="margin-left:auto;display:none;">
+                    <img id="campaignLogoImg" src="" alt="" style="max-height:36px;max-width:100px;object-fit:contain;">
+                </div>
+            </div>
+        </div>
+    </div>
 	
 <style>
 .device-progress { height:6px; border-radius:3px; background:#21262d; margin:6px 0 2px; overflow:hidden; }
