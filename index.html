@@ -14,6 +14,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" async>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" async></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js" async></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4.3.0/build/index.umd.min.js" async></script>
 
 <link rel="stylesheet" href="styles.css">
 
@@ -28,71 +29,67 @@
     </div>
 	<h1 id="title" class="text-center">Neskenuj náhodné QR kódy</h1>
 	
+<style>
+.device-progress { height:6px; border-radius:3px; background:#21262d; margin:6px 0 2px; overflow:hidden; }
+.device-progress-mobile  { height:100%; background:#3fb950; border-radius:3px; transition:width .6s ease; }
+.device-progress-desktop { height:100%; background:#58a6ff; border-radius:3px; transition:width .6s ease; }
+.pct-label { font-size:0.72rem; color:#8b949e; }
+.country-bar-wrap { background:#21262d; border-radius:3px; height:6px; flex:1; overflow:hidden; }
+.country-bar-fill { height:100%; background:#58a6ff; border-radius:3px; transition:width .5s ease; }
+</style>
+
 <div class="row g-3 mb-0">
 <div class="col-md-6">
 <div class="panel text-center" id="statsPanel">
-
-    <!-- Primární metrika — dnešní návštěvníci -->
     <h2 id="todayLabel" style="margin-bottom:4px;">Unikátní návštěvníci dnes</h2>
     <div class="count" id="counter" style="font-size:4rem;line-height:1.1;">…</div>
 
-    <!-- Rozdělení mobil / desktop -->
-    <div id="deviceSplit" style="display:flex;justify-content:center;gap:32px;margin:12px 0 20px;">
-        <div>
+    <div style="display:flex;justify-content:center;gap:32px;margin:14px 0 8px;">
+        <div style="min-width:80px;">
             <div style="font-size:1.6rem;font-weight:700;" id="todayMobile">…</div>
             <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
                 <i class="bi bi-phone"></i> Mobil
             </div>
+            <div class="device-progress"><div class="device-progress-mobile" id="todayMobileBar" style="width:0%"></div></div>
+            <div class="pct-label" id="todayMobilePct" style="display:none;"></div>
         </div>
         <div style="width:1px;background:#30363d;"></div>
-        <div>
+        <div style="min-width:80px;">
             <div style="font-size:1.6rem;font-weight:700;" id="todayDesktop">…</div>
             <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
                 <i class="bi bi-display"></i> Desktop
             </div>
+            <div class="device-progress"><div class="device-progress-desktop" id="todayDesktopBar" style="width:0%"></div></div>
+            <div class="pct-label" id="todayDesktopPct" style="display:none;"></div>
         </div>
     </div>
-
-
-
 </div>
 </div><!-- /.col-md-6 první box -->
 
 <div class="col-md-6">
 <div class="panel text-center" id="totalStatsPanel">
-
     <h2 id="totalPanelLabel" style="margin-bottom:4px;">Unikátní návštěvníci celkem</h2>
     <div class="count" id="totalCounter" style="font-size:4rem;line-height:1.1;">…</div>
 
-    <div id="totalDeviceSplit" style="display:flex;justify-content:center;gap:32px;margin:12px 0 20px;">
-        <div>
+    <div style="display:flex;justify-content:center;gap:32px;margin:14px 0 8px;">
+        <div style="min-width:80px;">
             <div style="font-size:1.6rem;font-weight:700;" id="totalMobile">…</div>
             <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
                 <i class="bi bi-phone"></i> Mobil
             </div>
+            <div class="device-progress"><div class="device-progress-mobile" id="totalMobileBar" style="width:0%"></div></div>
+            <div class="pct-label" id="totalMobilePct" style="display:none;"></div>
         </div>
         <div style="width:1px;background:#30363d;"></div>
-        <div>
+        <div style="min-width:80px;">
             <div style="font-size:1.6rem;font-weight:700;" id="totalDesktop">…</div>
             <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
                 <i class="bi bi-display"></i> Desktop
             </div>
+            <div class="device-progress"><div class="device-progress-desktop" id="totalDesktopBar" style="width:0%"></div></div>
+            <div class="pct-label" id="totalDesktopPct" style="display:none;"></div>
         </div>
     </div>
-
-    <hr style="border-color:#30363d;margin:0 auto 16px;max-width:200px;">
-
-    <div style="display:flex;justify-content:center;gap:48px;">
-        <div>
-            <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalMobileLabel">z toho mobilů</div>
-            <div style="font-size:1.4rem;font-weight:600;" id="totalMobilePct">…</div>
-        </div>
-        <div>
-            <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;" id="totalDesktopLabel">z toho desktopů</div>
-            <div style="font-size:1.4rem;font-weight:600;" id="totalDesktopPct">…</div>
-        </div>
-    </div>
-
 </div>
 </div><!-- /.col-md-6 druhý box -->
 </div><!-- /.row -->
@@ -224,6 +221,22 @@
                 <canvas id="osChart" height="220"></canvas>
             </div>
         </div>
+    </div>
+
+    <!-- Mapa + žebříček zemí (jen mobilní návštěvy) -->
+    <div class="panel" id="geoPanel">
+        <h2 id="geoTitle">Odkud přišli návštěvníci <small style="font-size:0.75rem;color:#8b949e;font-weight:400;">(mobilní zařízení)</small></h2>
+        <div class="row g-3 align-items-start">
+            <div class="col-md-8">
+                <canvas id="worldMap"></canvas>
+            </div>
+            <div class="col-md-4">
+                <div id="countryRanking" style="font-size:0.85rem;"></div>
+            </div>
+        </div>
+        <p id="geoNote" style="font-size:0.75rem;color:#8b949e;margin:12px 0 0;">
+            Geolokace je určena podle IP adresy přes Cloudflare &ndash; přesnost na úrovni státu.
+        </p>
     </div>
 
     <div class="panel">

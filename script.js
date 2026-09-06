@@ -512,6 +512,138 @@ function renderOsChart(osBreakdown) {
     });
 }
 
+// ---------------------------
+// Žebříček zemí
+// ---------------------------
+function countryFlag(cc) {
+    // Převod ISO kódu na emoji vlajku
+    if (!cc || cc === "unknown" || cc.length !== 2) return "🌍";
+    return cc.toUpperCase().replace(/./g, c =>
+        String.fromCodePoint(c.charCodeAt(0) + 127397)
+    );
+}
+
+function renderCountryRanking(ranking) {
+    const el = document.getElementById("countryRanking");
+    if (!el) return;
+
+    if (!ranking || ranking.length === 0) {
+        el.innerHTML = '<p style="color:#8b949e;font-size:0.8rem;">Zatím žádná data &ndash; nasbírají se po nasazení nové verze.</p>';
+        return;
+    }
+
+    const max = ranking[0]?.count || 1;
+    const top = ranking.slice(0, 10);
+
+    el.innerHTML = top.map((item, i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:0.75rem;color:#8b949e;width:16px;text-align:right;">${i + 1}</span>
+            <span style="font-size:1.1rem;">${countryFlag(item.cc)}</span>
+            <span style="font-size:0.8rem;min-width:28px;color:#8b949e;">${item.cc}</span>
+            <div class="country-bar-wrap">
+                <div class="country-bar-fill" style="width:${Math.round(item.count / max * 100)}%"></div>
+            </div>
+            <span style="font-size:0.8rem;font-weight:600;min-width:24px;text-align:right;">${item.count}</span>
+        </div>
+    `).join("");
+}
+
+// ---------------------------
+// Mapa světa (Chart.js Geo)
+// ---------------------------
+async function renderWorldMap(countryBreakdown) {
+    const canvas = document.getElementById("worldMap");
+    if (!canvas) return;
+
+    // Počkáme až se načte geo plugin (je async v HTML)
+    if (typeof ChartGeo === "undefined") {
+        await new Promise(resolve => {
+            const check = setInterval(() => {
+                if (typeof ChartGeo !== "undefined") { clearInterval(check); resolve(); }
+            }, 100);
+            setTimeout(() => { clearInterval(check); resolve(); }, 3000);
+        });
+    }
+
+    if (typeof ChartGeo === "undefined") {
+        // Fallback — plugin se nenačetl, zobrazíme jen žebříček
+        canvas.style.display = "none";
+        return;
+    }
+
+    // Načíst GeoJSON světa
+    let countries;
+    try {
+        const res = await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+        const topology = await res.json();
+        countries = ChartGeo.topojson.feature(topology, topology.objects.countries).features;
+    } catch {
+        canvas.style.display = "none";
+        return;
+    }
+
+    // ISO numeric → ISO alpha-2 mapa pro nejčastější země
+    // (world-atlas používá numerické kódy, my máme alpha-2 z CF)
+    const numericToAlpha2 = {
+        "040":"AT","056":"BE","100":"BG","191":"HR","196":"CY","203":"CZ",
+        "208":"DK","233":"EE","246":"FI","250":"FR","276":"DE","300":"GR",
+        "348":"HU","372":"IE","380":"IT","428":"LV","440":"LT","442":"LU",
+        "470":"MT","528":"NL","616":"PL","620":"PT","642":"RO","703":"SK",
+        "705":"SI","724":"ES","752":"SE","826":"GB","008":"AL","020":"AD",
+        "070":"BA","112":"BY","756":"CH","250":"FR","804":"UA","688":"RS",
+        "807":"MK","499":"ME","442":"LU","643":"RU","792":"TR","840":"US",
+        "124":"CA","484":"MX","076":"BR","032":"AR","152":"CL","170":"CO",
+        "604":"PE","858":"UY","356":"IN","156":"CN","392":"JP","410":"KR",
+        "036":"AU","554":"NZ","710":"ZA","818":"EG","566":"NG","404":"KE"
+    };
+
+    const isDark = document.body.classList.contains("dark");
+
+    new Chart(canvas, {
+        type: "choropleth",
+        data: {
+            labels: countries.map(d => d.properties.name),
+            datasets: [{
+                label: isEnglish ? "Mobile visitors" : "Mobilní návštěvníci",
+                data: countries.map(d => {
+                    const alpha2 = numericToAlpha2[String(d.id).padStart(3, "0")];
+                    return {
+                        feature: d,
+                        value: alpha2 ? (countryBreakdown[alpha2] || 0) : 0
+                    };
+                }),
+                backgroundColor(ctx) {
+                    if (!ctx.raw) return isDark ? "#21262d" : "#e1e4e8";
+                    const v = ctx.raw.value;
+                    if (v === 0) return isDark ? "#21262d" : "#e1e4e8";
+                    // Modrá škála podle hodnoty
+                    const alpha = Math.min(0.2 + v * 0.15, 1);
+                    return `rgba(88,166,255,${alpha})`;
+                },
+                borderColor: isDark ? "#30363d" : "#c8ccd0",
+                borderWidth: 0.5
+            }]
+        },
+        options: {
+            showOutline: false,
+            showGraticule: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label(ctx) {
+                            return `${ctx.raw.feature.properties.name}: ${ctx.raw.value}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                projection: { axis: "x", projection: "naturalEarth1" }
+            }
+        }
+    });
+}
+
 /*
 function renderFingerprint(data) {
     fillSection("fp-general", data.general);
@@ -701,38 +833,64 @@ async function init() {
     // 8) Načtení statistik pro grafy
     const fullStats = await loadStats();
 
-    // 9) Plnit device split — dnešní panel
-    if (fullStats.deviceToday) {
-        document.getElementById("todayMobile").textContent = fullStats.deviceToday.mobile || 0;
-        document.getElementById("todayDesktop").textContent = fullStats.deviceToday.desktop || 0;
+    // 9) Dnešní panel — split + progress bar + podmíněná procenta
+    const dt = fullStats.deviceToday || {};
+    const todayMob  = dt.mobile  || 0;
+    const todayDesk = dt.desktop || 0;
+    const todaySum  = todayMob + todayDesk || 1;
+
+    setEl("todayMobile",  todayMob);
+    setEl("todayDesktop", todayDesk);
+    setBar("todayMobileBar",  Math.round(todayMob  / todaySum * 100));
+    setBar("todayDesktopBar", Math.round(todayDesk / todaySum * 100));
+    if (todaySum > 1) {
+        showPct("todayMobilePct",  todayMob,  todaySum);
+        showPct("todayDesktopPct", todayDesk, todaySum);
     }
 
-    // 10) Plnit celkový panel
+    // 10) Celkový panel — split + progress bar + podmíněná procenta
     const total = fullStats.total || stats.total || 0;
-    if (document.getElementById("totalCounter"))
-        document.getElementById("totalCounter").textContent = total;
+    setEl("totalCounter", total);
 
-    if (fullStats.deviceBreakdown) {
-        const db = fullStats.deviceBreakdown;
-        const mob = db.mobile || 0;
-        const desk = db.desktop || 0;
-        const sum = mob + desk || 1; // ochrana před dělením nulou
+    const db = fullStats.deviceBreakdown || {};
+    const totalMob  = db.mobile  || 0;
+    const totalDesk = db.desktop || 0;
+    const totalSum  = totalMob + totalDesk || 1;
 
-        if (document.getElementById("totalMobile"))
-            document.getElementById("totalMobile").textContent = mob;
-        if (document.getElementById("totalDesktop"))
-            document.getElementById("totalDesktop").textContent = desk;
-        if (document.getElementById("totalMobilePct"))
-            document.getElementById("totalMobilePct").textContent = Math.round(mob / sum * 100) + " %";
-        if (document.getElementById("totalDesktopPct"))
-            document.getElementById("totalDesktopPct").textContent = Math.round(desk / sum * 100) + " %";
+    setEl("totalMobile",  totalMob);
+    setEl("totalDesktop", totalDesk);
+    setBar("totalMobileBar",  Math.round(totalMob  / totalSum * 100));
+    setBar("totalDesktopBar", Math.round(totalDesk / totalSum * 100));
+    if (totalSum > 1) {
+        showPct("totalMobilePct",  totalMob,  totalSum);
+        showPct("totalDesktopPct", totalDesk, totalSum);
     }
 
-    // 10) Vykreslení všech grafů
+    // 11) Vykreslení grafů
     renderLineChart(fullStats.stats);
     renderHeatmap(fullStats.stats);
     renderDeviceChart(fullStats.deviceBreakdown);
     renderOsChart(fullStats.osBreakdown);
+    renderCountryRanking(fullStats.countryRanking || []);
+    renderWorldMap(fullStats.countryBreakdown || {});
+}
+
+// Pomocné funkce pro plnění panelů
+function setEl(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function setBar(id, pct) {
+    const el = document.getElementById(id);
+    if (el) el.style.width = pct + "%";
+}
+
+function showPct(id, val, sum) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = Math.round(val / sum * 100) + " %";
+    el.style.display = "block";
 }
 
 
