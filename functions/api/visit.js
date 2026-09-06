@@ -1,67 +1,75 @@
-/*export async function onRequestPost(context) {
-    const env = context.env;
-    const { fingerprint } = await context.request.json();
-    const today = new Date().toISOString().slice(0, 10);
-
-    const totalKey = "total";
-    const todayKey = `day:${today}`;
-    const fpKey = `fp:${today}:${fingerprint}`;
-
-    const alreadyToday = await env.DB.get(fpKey);
-
-    if (!alreadyToday) {
-        await env.DB.put(fpKey, "1");
-
-        const todayCount = parseInt(await env.DB.get(todayKey) || "0") + 1;
-        await env.DB.put(todayKey, todayCount.toString());
-
-        const totalCount = parseInt(await env.DB.get(totalKey) || "0") + 1;
-        await env.DB.put(totalKey, totalCount.toString());
-    }
-
-    const todayCount = parseInt(await env.DB.get(todayKey) || "0");
-    const totalCount = parseInt(await env.DB.get(totalKey) || "0");
-
-    return new Response(JSON.stringify({
-        today: todayCount,
-        total: totalCount
-    }), {
-        headers: { "Content-Type": "application/json" }
-    });
-}
-*/
-
 export async function onRequestPost(context) {
     const { request, env } = context;
 
-    const body = await request.json();
+    let body;
+    try {
+        body = await request.json();
+    } catch {
+        return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+
     const fingerprint = body.fingerprint;
     const deviceType = body.deviceType || "unknown";
 
-    // --- 1) ULOŽENÍ LOGU NÁVŠTĚVY ---
-    const logEntry = {
-        fingerprint,
-        deviceType,
-        timestamp: Date.now()
-    };
+    if (!fingerprint) {
+        return new Response(JSON.stringify({ error: "Missing fingerprint" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
 
-    // Každý log jako samostatný klíč
-    await env.VISIT_LOGS.put(
-        `visit:${logEntry.timestamp}`,
-        JSON.stringify(logEntry)
-    );
-
-    // --- 2) NAČTENÍ AGREGACÍ ---
     const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const todayCount = parseInt(await env.VISIT_COUNTER.get(todayKey)) || 0;
-    const totalCount = parseInt(await env.VISIT_COUNTER.get("total")) || 0;
 
-    // --- 3) AKTUALIZACE ---
-    await env.VISIT_COUNTER.put(todayKey, (todayCount + 1).toString());
-    await env.VISIT_COUNTER.put("total", (totalCount + 1).toString());
+    // Klíč pro kontrolu unikátnosti – fingerprint + den
+    const uniqueKey = `fp:${todayKey}:${fingerprint}`;
+    const alreadySeen = await env.VISIT_COUNTER.get(uniqueKey);
+
+    if (!alreadySeen) {
+        // Označit fingerprint jako viděný dnes (TTL 48h stačí)
+        await env.VISIT_COUNTER.put(uniqueKey, "1", { expirationTtl: 172800 });
+
+        // Uložit log návštěvy
+        const logEntry = JSON.stringify({
+            fingerprint,
+            deviceType,
+            timestamp: Date.now()
+        });
+        await env.VISIT_LOGS.put(`visit:${Date.now()}:${fingerprint.slice(0, 8)}`, logEntry, {
+            expirationTtl: 60 * 60 * 24 * 90 // 90 dní
+        });
+
+        // Aktualizovat čítače
+        const todayCount = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
+        const totalCount = parseInt(await env.VISIT_COUNTER.get("total") || "0");
+
+        await env.VISIT_COUNTER.put(todayKey, String(todayCount + 1));
+        await env.VISIT_COUNTER.put("total", String(totalCount + 1));
+    }
+
+    // Vrátit aktuální hodnoty
+    const today = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
+    const total = parseInt(await env.VISIT_COUNTER.get("total") || "0");
 
     return new Response(
-        JSON.stringify({ ok: true }),
-        { headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ today, total }),
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            }
+        }
     );
+}
+
+export async function onRequestOptions() {
+    return new Response(null, {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type"
+        }
+    });
 }
