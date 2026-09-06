@@ -347,23 +347,168 @@ function renderLineChart(stats) {
 
 function renderHeatmap(stats) {
     const container = document.getElementById("heatmap");
+    if (!container) return;
     container.innerHTML = "";
 
-    const max = Math.max(...stats.map(s => s.count), 1);
+    const isDark = document.body.classList.contains("dark");
+    const emptyColor  = isDark ? "#161b22" : "#ebedf0";
+    const labelColor  = isDark ? "#8b949e" : "#57606a";
+    const borderColor = isDark ? "#0d1117" : "#ffffff";
 
-    for (const s of stats) {
-        const intensity = s.count / max;
-        const color = intensity === 0
-            ? "#161b22"
-            : `rgba(88,166,255,${0.2 + intensity * 0.8})`;
+    // Dny v týdnu (Po–Ne), česky zkráceně
+    const DAY_LABELS = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
+    // Pořadí: 0 = pondělí ... 6 = neděle (ISO)
+    // JS getDay(): 0 = neděle, 1 = pondělí … převedeme na ISO
+    const jsToISO = d => (d + 6) % 7; // 0=Po, 6=Ne
 
-        const div = document.createElement("div");
-        div.className = "heatbox";
-        div.style.backgroundColor = color;
-        div.title = `${s.day}: ${s.count}`;
+    // Sestavit slovník datum→počet ze stats pole
+    const countByDay = {};
+    for (const s of stats) countByDay[s.day] = s.count;
 
-        container.appendChild(div);
+    // Zjistit rozsah — chceme zobrazit posledních ~16 týdnů (112 dní)
+    // Zaokrouhlíme konec na nejbližší neděli, začátek 16 týdnů zpět
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Konec gridu = nejbližší budoucí nebo dnešní neděle (ISO den 6)
+    const endDate = new Date(today);
+    const todayISO = jsToISO(today.getDay());
+    endDate.setDate(endDate.getDate() + (6 - todayISO)); // posun na neděli
+
+    // Začátek = 15 úplných týdnů + aktuální (celkem 16 sloupců)
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 7 * 15 - 6); // pondělí 16 týdnů zpět
+
+    // Shromáždit všechna data do pole [Po,Út,...,Ne] × týdny
+    const weeks = [];
+    let current = new Date(startDate);
+    while (current <= endDate) {
+        const week = [];
+        for (let d = 0; d < 7; d++) {
+            const key = current.toISOString().slice(0, 10);
+            const isFuture = current > today;
+            week.push({
+                date: new Date(current),
+                key,
+                count: isFuture ? null : (countByDay[key] || 0)
+            });
+            current.setDate(current.getDate() + 1);
+        }
+        weeks.push(week);
     }
+
+    const CELL  = 13; // px velikost čtverce
+    const GAP   = 3;  // px mezera
+    const LABEL_W = 24; // px šířka sloupce s dny
+    const LABEL_H = 16; // px výška řádku s měsíci
+
+    const cols = weeks.length;
+    const rows = 7;
+    const svgW = LABEL_W + cols * (CELL + GAP);
+    const svgH = LABEL_H + rows * (CELL + GAP);
+
+    // Max pro škálování barev
+    const allCounts = Object.values(countByDay).filter(v => v > 0);
+    const maxCount = allCounts.length ? Math.max(...allCounts) : 1;
+
+    // Barva buňky podle počtu (5 úrovní jako GitHub)
+    function cellColor(count) {
+        if (count === null) return "transparent"; // budoucí
+        if (count === 0)    return emptyColor;
+        const ratio = count / maxCount;
+        if (ratio < 0.25) return isDark ? "#0e4429" : "#9be9a8";
+        if (ratio < 0.50) return isDark ? "#006d32" : "#40c463";
+        if (ratio < 0.75) return isDark ? "#26a641" : "#30a14e";
+        return isDark ? "#39d353" : "#216e39";
+        // Používáme zelenou škálu jako GitHub — je čitelnější než modrá pro intenzitu
+    }
+
+    // SVG sestavit jako string
+    const rects = [];
+
+    // Popisky dní (Po, St, Pá — každý druhý pro úsporu místa)
+    [0, 2, 4, 6].forEach(i => {
+        const y = LABEL_H + i * (CELL + GAP) + CELL * 0.75;
+        rects.push(`<text x="${LABEL_W - 4}" y="${y}" text-anchor="end"
+            font-size="9" fill="${labelColor}" font-family="system-ui,sans-serif">${DAY_LABELS[i]}</text>`);
+    });
+
+    // Popisky měsíců — zobrazíme jen když se změní měsíc
+    let lastMonth = -1;
+    weeks.forEach((week, wi) => {
+        const x = LABEL_W + wi * (CELL + GAP);
+        const firstDay = week[0].date; // pondělí tohoto týdne
+        if (firstDay.getMonth() !== lastMonth) {
+            lastMonth = firstDay.getMonth();
+            const monthNames = ["Led","Úno","Bře","Dub","Kvě","Čvn","Čvc","Srp","Zář","Říj","Lis","Pro"];
+            rects.push(`<text x="${x}" y="${LABEL_H - 3}" font-size="9"
+                fill="${labelColor}" font-family="system-ui,sans-serif">${monthNames[firstDay.getMonth()]}</text>`);
+        }
+
+        // Buňky týdne
+        week.forEach((day, di) => {
+            const y = LABEL_H + di * (CELL + GAP);
+            const color = cellColor(day.count);
+            const isFuture = day.count === null;
+            const tooltipText = isFuture ? "" : `${day.key}: ${day.count} návštěv`;
+
+            rects.push(`<rect
+                x="${x}" y="${y}"
+                width="${CELL}" height="${CELL}"
+                rx="2" ry="2"
+                fill="${color}"
+                stroke="${borderColor}"
+                stroke-width="1"
+                ${tooltipText ? `data-tip="${tooltipText}"` : ""}
+            />`);
+        });
+    });
+
+    // Legenda
+    const legendX = LABEL_W;
+    const legendY = svgH + 8;
+    const levels = [0, 0.2, 0.45, 0.7, 1.0];
+    const legendItems = levels.map((v, i) => {
+        const color = v === 0 ? emptyColor : cellColor(Math.ceil(v * maxCount));
+        const lx = legendX + i * (CELL + GAP);
+        return `<rect x="${lx}" y="${legendY}" width="${CELL}" height="${CELL}" rx="2" fill="${color}" stroke="${borderColor}" stroke-width="1"/>`;
+    }).join("");
+
+    const svgTotal = svgH + CELL + 16;
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 ${svgW} ${svgTotal}"
+        style="width:100%;max-width:${svgW}px;display:block;">
+        ${rects.join("\n")}
+        <text x="${legendX - 2}" y="${legendY + CELL * 0.8}" font-size="9" fill="${labelColor}" font-family="system-ui,sans-serif" text-anchor="end">méně</text>
+        ${legendItems}
+        <text x="${legendX + levels.length * (CELL + GAP) + 2}" y="${legendY + CELL * 0.8}" font-size="9" fill="${labelColor}" font-family="system-ui,sans-serif">více</text>
+    </svg>`;
+
+    container.innerHTML = svg;
+
+    // Tooltips — přes title atributy nebo vlastní hover
+    container.querySelectorAll("rect[data-tip]").forEach(rect => {
+        rect.addEventListener("mouseenter", e => {
+            const tip = document.createElement("div");
+            tip.id = "heatTip";
+            tip.textContent = rect.getAttribute("data-tip");
+            tip.style.cssText = `position:fixed;background:#1c2128;color:#c9d1d9;
+                border:1px solid #30363d;border-radius:6px;padding:4px 8px;
+                font-size:0.75rem;pointer-events:none;z-index:9999;white-space:nowrap;`;
+            document.body.appendChild(tip);
+        });
+        rect.addEventListener("mousemove", e => {
+            const tip = document.getElementById("heatTip");
+            if (tip) {
+                tip.style.left = (e.clientX + 12) + "px";
+                tip.style.top  = (e.clientY - 28) + "px";
+            }
+        });
+        rect.addEventListener("mouseleave", () => {
+            document.getElementById("heatTip")?.remove();
+        });
+    });
 }
 
 // ---------------------------

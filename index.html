@@ -205,7 +205,9 @@
 
     <div class="panel">
         <h2 id="heatmapTitle">Heatmapa návštěvnosti</h2>
-        <div id="heatmap" class="d-flex flex-wrap" style="max-width: 700px;"></div>
+        <div id="heatmapWrap" style="overflow-x:auto;">
+            <div id="heatmap"></div>
+        </div>
     </div>
 
     <div class="row">
@@ -409,7 +411,24 @@
 
                         <p style="margin-bottom:0;"><strong style="color:#8b949e;">⚠️ Pozor na zkrácené URL</strong><br>
                         I když URL vidíš, může být zkrácená přes bit.ly, tinyurl nebo podobné služby.
-                        Samotný náhled domény pak nestačí &ndash; pod zkrácenou URL se může skrývat cokoliv.</p>
+                        Samotný náhled domény pak nestačí &ndash; pod zkrácenou URL se může skrývat cokoliv.
+                        Naštěstí většina zkracovačů nabízí způsob, jak cíl odhalit ještě před kliknutím:</p>
+                        <ul style="margin-top:8px;margin-bottom:0;">
+                            <li><strong>bit.ly</strong> &ndash; přidej <code>+</code> na konec URL:
+                                <code>bit.ly/abc123<strong>+</strong></code><br>
+                                <span style="font-size:0.8rem;">Zobrazí statistiky odkazu včetně cílové adresy. Od roku 2025 může bit.ly na free účtech zobrazovat reklamu na této preview stránce &ndash; to je normální, není to útok.</span>
+                            </li>
+                            <li style="margin-top:6px;"><strong>TinyURL</strong> &ndash; přidej <code>preview.</code> před doménu:
+                                <code><strong>preview.</strong>tinyurl.com/abc123</code>
+                            </li>
+                            <li style="margin-top:6px;"><strong>Ostatní zkracovače</strong> &ndash; zkopíruj odkaz do
+                                <a href="https://checkshorturl.com" target="_blank" rel="noopener" style="color:#58a6ff;">checkshorturl.com</a>
+                                nebo podobné služby, která proklikne přesměrování za tebe a zobrazí konečnou URL.
+                            </li>
+                            <li style="margin-top:6px;"><strong>Pozor na vícenásobné přesměrování</strong> &ndash; zkrácená URL může vést na
+                                další zkrácenou URL a teprve ta na skutečný cíl. Preview triku proto nestačí vždy jen jednou.
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
