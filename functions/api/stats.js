@@ -18,14 +18,20 @@ export async function onRequestGet(context) {
         stats.push({ day: key, count });
     }
 
-    // Device breakdown
+    // Device breakdown — celkový
     const deviceBreakdown = {
         mobile: parseInt(await env.VISIT_COUNTER.get("device-mobile-total") || "0"),
         desktop: parseInt(await env.VISIT_COUNTER.get("device-desktop-total") || "0"),
         unknown: parseInt(await env.VISIT_COUNTER.get("device-unknown-total") || "0")
     };
 
-    // OS breakdown
+    // Device breakdown — dnešní (pro split v hlavním panelu)
+    const deviceToday = {
+        mobile: parseInt(await env.VISIT_COUNTER.get(`device-mobile-${todayKey}`) || "0"),
+        desktop: parseInt(await env.VISIT_COUNTER.get(`device-desktop-${todayKey}`) || "0")
+    };
+
+    // OS breakdown — celkový
     const osBreakdown = {
         android: parseInt(await env.VISIT_COUNTER.get("os-android-total") || "0"),
         ios: parseInt(await env.VISIT_COUNTER.get("os-ios-total") || "0"),
@@ -36,7 +42,7 @@ export async function onRequestGet(context) {
     };
 
     return new Response(
-        JSON.stringify({ today, total, stats, deviceBreakdown, osBreakdown }),
+        JSON.stringify({ today, total, stats, deviceBreakdown, deviceToday, osBreakdown }),
         { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
 }
