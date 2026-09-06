@@ -6,10 +6,10 @@
 <title>Admin – QR Visit Tracker</title>
 
 <!-- Web Awesome Free CDN -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/styles/themes/default.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/styles/utilities.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/styles/native.css">
-<script type="module" src="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/webawesome.loader.js"></script>
+<link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.12.0/styles/themes/default.css">
+<link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.12.0/styles/utilities.css">
+<link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.12.0/styles/native.css">
+<script type="module" src="https://ka-f.webawesome.com/webawesome@3.12.0/webawesome.loader.js"></script>
 
 <!-- Chart.js + Geo (pro heatmapu a mapu světa) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -421,7 +421,7 @@ function setWaChart(id, config) {
 }
 
 async function loadStats() {
-    const res  = await fetch("../api/stats?device=all");
+    const res  = await fetch("../api/stats?device=all", { credentials: "include" });
     const data = await res.json();
 
     // Metriky
@@ -540,6 +540,7 @@ async function createCampaign() {
 
     try {
         const res  = await fetch("../api/campaigns", {
+            credentials: "include",
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name, description: desc, startDate: start })
@@ -566,7 +567,7 @@ async function createCampaign() {
 async function loadCampaigns() {
     const container = document.getElementById("campaignList");
     try {
-        const res  = await fetch("../api/campaigns");
+        const res  = await fetch("../api/campaigns", { credentials: "include" });
         const data = await res.json();
         const list = data.campaigns || [];
 
@@ -647,7 +648,7 @@ async function loadLogs(reset = true) {
     if (activeQFilter) url += `&${activeQFilter}`;
     if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
 
-    const res  = await fetch(url);
+    const res  = await fetch(url, { credentials: "include" });
     const data = await res.json();
     currentCursor = data.nextCursor || null;
 
