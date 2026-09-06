@@ -57,6 +57,7 @@ export async function onRequestPost(context) {
     } else {
         const uniqueKey = `fp:${todayKey}:${fingerprint}`;
         const alreadySeen = await env.VISIT_COUNTER.get(uniqueKey);
+        const isReturning = !!alreadySeen;
 
         if (!alreadySeen) {
             // Označit fingerprint jako viděný dnes (TTL 48h)
@@ -81,35 +82,38 @@ export async function onRequestPost(context) {
             await env.VISIT_COUNTER.put(`os-${validOS}-total`, String(osTotal + 1));
 
             // Country čítače
-            const countryKey = `country-${deviceValidKey}-${country}`;
+            const deviceValidKey2 = ["mobile", "desktop"].includes(deviceType) ? deviceType : "unknown";
+            const countryKey = `country-${deviceValidKey2}-${country}`;
             const countryTotal = parseInt(await env.VISIT_COUNTER.get(countryKey) || "0");
             await env.VISIT_COUNTER.put(countryKey, String(countryTotal + 1));
 
-            // UTM kampaň — zapsat do CAMPAIGNS namespace pokud slug existuje
+            // UTM kampaň
             if (utmCampaign && env.CAMPAIGNS) {
                 const campaignMeta = await env.CAMPAIGNS.get(`campaign:${utmCampaign}`);
                 if (campaignMeta) {
-                    // Celkový hit
                     const hits = parseInt(await env.CAMPAIGNS.get(`campaign-hits:${utmCampaign}`) || "0");
                     await env.CAMPAIGNS.put(`campaign-hits:${utmCampaign}`, String(hits + 1));
-
-                    // Denní hit
                     const dayHits = parseInt(await env.CAMPAIGNS.get(`campaign-day:${utmCampaign}:${todayKey}`) || "0");
                     await env.CAMPAIGNS.put(`campaign-day:${utmCampaign}:${todayKey}`, String(dayHits + 1));
-
-                    // Device hit
                     const devHits = parseInt(await env.CAMPAIGNS.get(`campaign-device:${utmCampaign}:${deviceValidKey}`) || "0");
                     await env.CAMPAIGNS.put(`campaign-device:${utmCampaign}:${deviceValidKey}`, String(devHits + 1));
-
-                    // Country hit
                     const ccHits = parseInt(await env.CAMPAIGNS.get(`campaign-country:${utmCampaign}:${country}`) || "0");
                     await env.CAMPAIGNS.put(`campaign-country:${utmCampaign}:${country}`, String(ccHits + 1));
                 }
             }
         }
+
+        // Vrátit aktuální hodnoty včetně isReturning flagu
+        const today = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
+        const total = parseInt(await env.VISIT_COUNTER.get("total") || "0");
+
+        return new Response(
+            JSON.stringify({ today, total, isReturning }),
+            { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+        );
     }
 
-    // Vrátit aktuální hodnoty
+    // Bot response (bez isReturning)
     const today = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
     const total = parseInt(await env.VISIT_COUNTER.get("total") || "0");
 
