@@ -78,8 +78,10 @@ export async function onRequestGet(context) {
         if (!raw) continue;
         const s = item.name.replace("campaign:", "");
         const meta = JSON.parse(raw);
-        const total = parseInt(await env.CAMPAIGNS.get(`campaign-hits:${s}`) || "0");
-        campaigns.push({ slug: s, ...meta, total });
+        const total   = parseInt(await env.CAMPAIGNS.get(`campaign-hits:${s}`) || "0");
+        const mobile  = parseInt(await env.CAMPAIGNS.get(`campaign-device:${s}:mobile`)  || "0");
+        const desktop = parseInt(await env.CAMPAIGNS.get(`campaign-device:${s}:desktop`) || "0");
+        campaigns.push({ slug: s, ...meta, total, mobile, desktop });
     }
     campaigns.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
