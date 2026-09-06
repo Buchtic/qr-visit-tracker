@@ -12,7 +12,9 @@ export async function onRequestPost(context) {
     }
 
     const fingerprint = body.fingerprint;
-    const deviceType = body.deviceType || "unknown";
+    const deviceType = body.deviceType || "unknown"; // mobile | desktop | unknown
+    const os = body.os || "unknown";                 // android | ios | windows | mac | linux | unknown
+    const isBot = body.isBot === true;
 
     if (!fingerprint) {
         return new Response(JSON.stringify({ error: "Missing fingerprint" }), {
@@ -23,30 +25,47 @@ export async function onRequestPost(context) {
 
     const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
-    // Klíč pro kontrolu unikátnosti – fingerprint + den
-    const uniqueKey = `fp:${todayKey}:${fingerprint}`;
-    const alreadySeen = await env.VISIT_COUNTER.get(uniqueKey);
+    // Uložit log návštěvy vždy (i boti, i opakované) — pro audit
+    const logEntry = JSON.stringify({
+        fingerprint,
+        deviceType,
+        os,
+        isBot,
+        timestamp: Date.now()
+    });
+    await env.VISIT_LOGS.put(
+        `visit:${Date.now()}:${fingerprint.slice(0, 8)}`,
+        logEntry,
+        { expirationTtl: 60 * 60 * 24 * 90 } // 90 dní
+    );
 
-    if (!alreadySeen) {
-        // Označit fingerprint jako viděný dnes (TTL 48h stačí)
-        await env.VISIT_COUNTER.put(uniqueKey, "1", { expirationTtl: 172800 });
+    // Boti se nezapočítají do žádných čítačů
+    if (!isBot) {
+        const uniqueKey = `fp:${todayKey}:${fingerprint}`;
+        const alreadySeen = await env.VISIT_COUNTER.get(uniqueKey);
 
-        // Uložit log návštěvy
-        const logEntry = JSON.stringify({
-            fingerprint,
-            deviceType,
-            timestamp: Date.now()
-        });
-        await env.VISIT_LOGS.put(`visit:${Date.now()}:${fingerprint.slice(0, 8)}`, logEntry, {
-            expirationTtl: 60 * 60 * 24 * 90 // 90 dní
-        });
+        if (!alreadySeen) {
+            // Označit fingerprint jako viděný dnes (TTL 48h)
+            await env.VISIT_COUNTER.put(uniqueKey, "1", { expirationTtl: 172800 });
 
-        // Aktualizovat čítače
-        const todayCount = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
-        const totalCount = parseInt(await env.VISIT_COUNTER.get("total") || "0");
+            // Hlavní čítače (celkem, dnes)
+            const todayCount = parseInt(await env.VISIT_COUNTER.get(todayKey) || "0");
+            const totalCount = parseInt(await env.VISIT_COUNTER.get("total") || "0");
+            await env.VISIT_COUNTER.put(todayKey, String(todayCount + 1));
+            await env.VISIT_COUNTER.put("total", String(totalCount + 1));
 
-        await env.VISIT_COUNTER.put(todayKey, String(todayCount + 1));
-        await env.VISIT_COUNTER.put("total", String(totalCount + 1));
+            // Device čítače: mobile-total, desktop-total, mobile-DATUM, desktop-DATUM
+            const deviceValidKey = ["mobile", "desktop"].includes(deviceType) ? deviceType : "unknown";
+            const devTotal = parseInt(await env.VISIT_COUNTER.get(`device-${deviceValidKey}-total`) || "0");
+            const devToday = parseInt(await env.VISIT_COUNTER.get(`device-${deviceValidKey}-${todayKey}`) || "0");
+            await env.VISIT_COUNTER.put(`device-${deviceValidKey}-total`, String(devTotal + 1));
+            await env.VISIT_COUNTER.put(`device-${deviceValidKey}-${todayKey}`, String(devToday + 1));
+
+            // OS čítače
+            const validOS = ["android", "ios", "windows", "mac", "linux"].includes(os) ? os : "unknown";
+            const osTotal = parseInt(await env.VISIT_COUNTER.get(`os-${validOS}-total`) || "0");
+            await env.VISIT_COUNTER.put(`os-${validOS}-total`, String(osTotal + 1));
+        }
     }
 
     // Vrátit aktuální hodnoty
@@ -55,12 +74,7 @@ export async function onRequestPost(context) {
 
     return new Response(
         JSON.stringify({ today, total }),
-        {
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-            }
-        }
+        { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
 }
 
