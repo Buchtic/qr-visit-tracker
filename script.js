@@ -305,11 +305,11 @@ function translateKey(key) {
 // ---------------------------
 // API calls
 // ---------------------------
-async function sendVisit(fingerprint, deviceType, os, isBot) {
+async function sendVisit(fingerprint, deviceType, os, isBot, utmCampaign) {
     const res = await fetch("api/visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fingerprint, deviceType, os, isBot })
+        body: JSON.stringify({ fingerprint, deviceType, os, isBot, utm_campaign: utmCampaign || null })
     });
     return await res.json();
 }
@@ -960,10 +960,11 @@ async function init() {
     // 1) Jazyková mutace
     if (isEnglish) applyEnglishTexts();
 
-    // 2) Detekce zařízení, OS a botů
-    const deviceType = detectDeviceType();
-    const os = detectOS();
-    const isBot = detectBot();
+    // 2) Detekce zařízení, OS, botů a UTM parametru z URL
+    const deviceType  = detectDeviceType();
+    const os          = detectOS();
+    const isBot       = detectBot();
+    const utmCampaign = new URLSearchParams(location.search).get("utm_campaign") || "";
 
     // 3) Banner podle typu návštěvníka
     if (isBot) {
@@ -978,8 +979,8 @@ async function init() {
     // 5) Vykreslení fingerprintu do kategorií
     renderFingerprint(data);
 
-    // 6) Poslání fingerprintu na backend (včetně OS a bot flagu)
-    const stats = await sendVisit(data.fingerprint, deviceType, os, isBot);
+    // 6) Poslání fingerprintu na backend (včetně OS, bot flagu a UTM)
+    const stats = await sendVisit(data.fingerprint, deviceType, os, isBot, utmCampaign);
 
     // 7) Zobrazení dnešního počtu
     document.getElementById("counter").textContent = stats.today;
