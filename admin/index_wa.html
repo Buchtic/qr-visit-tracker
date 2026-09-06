@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="cs" class="wa-dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin – QR Visit Tracker</title>
+
+<!-- Web Awesome Free CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/styles/themes/default.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/styles/utilities.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/styles/native.css">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@awesome.me/webawesome@3.12.0/dist/webawesome.loader.js"></script>
+
+<!-- Chart.js + Geo (pro heatmapu a mapu světa) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4.3.0/build/index.umd.min.js"></script>
+<script src="../charts.js"></script>
+
+<style>
+    body { margin: 0; font-family: var(--wa-font-sans); background: var(--wa-color-neutral-950); color: var(--wa-color-neutral-0); }
+
+    .admin-layout { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+
+    /* Topbar */
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--wa-space-3) var(--wa-space-5); border-bottom: 1px solid var(--wa-color-neutral-800); background: var(--wa-color-neutral-900); gap: var(--wa-space-3); flex-wrap: wrap; }
+    .topbar-title { font-size: var(--wa-font-size-lg); font-weight: var(--wa-font-weight-semibold); display: flex; align-items: center; gap: var(--wa-space-2); }
+    .topbar-title small { font-size: var(--wa-font-size-xs); color: var(--wa-color-neutral-400); font-weight: normal; }
+
+    /* Obsah */
+    .admin-content { padding: var(--wa-space-5); max-width: 1400px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+    /* Metrické karty */
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--wa-space-3); margin-bottom: var(--wa-space-5); }
+    .metric-card { text-align: center; }
+    .metric-num { font-size: 2.2rem; font-weight: var(--wa-font-weight-bold); line-height: 1.1; }
+    .metric-lbl { font-size: var(--wa-font-size-xs); color: var(--wa-color-neutral-400); margin-top: var(--wa-space-1); }
+    .metric-sub { font-size: var(--wa-font-size-2xs); margin-top: 2px; }
+
+    /* Sekce */
+    .section-title { font-size: var(--wa-font-size-sm); font-weight: var(--wa-font-weight-semibold); color: var(--wa-color-neutral-300); margin: 0 0 var(--wa-space-3); display: flex; align-items: center; gap: var(--wa-space-2); }
+
+    /* Log tabulka */
+    .log-table { width: 100%; border-collapse: collapse; font-size: var(--wa-font-size-sm); }
+    .log-table th { text-align: left; padding: var(--wa-space-2) var(--wa-space-3); font-size: var(--wa-font-size-xs); font-weight: var(--wa-font-weight-semibold); color: var(--wa-color-neutral-400); border-bottom: 1px solid var(--wa-color-neutral-800); white-space: nowrap; }
+    .log-table td { padding: var(--wa-space-2) var(--wa-space-3); border-bottom: 1px solid var(--wa-color-neutral-850, #1a1f26); vertical-align: middle; }
+    .log-table tbody tr { cursor: pointer; transition: background .15s; }
+    .log-table tbody tr:hover { background: var(--wa-color-neutral-850, #1a1f26); }
+    .raw-json { font-size: var(--wa-font-size-xs); background: var(--wa-color-neutral-950); border-radius: var(--wa-border-radius-md); padding: var(--wa-space-3); white-space: pre-wrap; word-break: break-all; border: 1px solid var(--wa-color-neutral-800); margin: var(--wa-space-1) 0 var(--wa-space-2); font-family: var(--wa-font-mono); }
+
+    /* Quick filtry */
+    .qf-bar { display: flex; flex-wrap: wrap; gap: var(--wa-space-2); align-items: center; margin-bottom: var(--wa-space-3); }
+    .qf-bar small { font-size: var(--wa-font-size-xs); color: var(--wa-color-neutral-400); }
+
+    /* Kampaně tabulka */
+    .camp-table { width: 100%; border-collapse: collapse; font-size: var(--wa-font-size-sm); }
+    .camp-table th { text-align: left; padding: var(--wa-space-2) var(--wa-space-3); font-size: var(--wa-font-size-xs); font-weight: var(--wa-font-weight-semibold); color: var(--wa-color-neutral-400); border-bottom: 1px solid var(--wa-color-neutral-800); }
+    .camp-table td { padding: var(--wa-space-2) var(--wa-space-3); border-bottom: 1px solid var(--wa-color-neutral-850, #1a1f26); vertical-align: middle; }
+    .camp-actions { display: flex; gap: var(--wa-space-1); }
+
+    /* Datum filtry */
+    .date-filter { display: flex; flex-wrap: wrap; gap: var(--wa-space-2); align-items: flex-end; margin-bottom: var(--wa-space-3); }
+
+    /* Heatbox pro heatmapu */
+    .heatbox { width: 14px; height: 14px; border-radius: 3px; margin: 1px; }
+
+    /* Grid layout pro grafy */
+    .charts-row { display: grid; gap: var(--wa-space-4); margin-bottom: var(--wa-space-4); }
+    .charts-row-2 { grid-template-columns: 2fr 1fr; }
+    .charts-row-3 { grid-template-columns: 2fr 1fr 1fr; }
+    @media (max-width: 900px) {
+        .charts-row-2, .charts-row-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ISP žebříček */
+    .isp-bar-wrap { flex: 1; background: var(--wa-color-neutral-800); border-radius: 2px; height: 4px; overflow: hidden; }
+    .isp-bar-fill { height: 100%; background: var(--wa-color-green-500); border-radius: 2px; }
+
+    /* QR kód v modalu */
+    .qr-wrap { display: flex; justify-content: center; margin: var(--wa-space-4) 0; }
+</style>
+</head>
+<body class="wa-dark">
+<div class="admin-layout">
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-title">
+            <wa-icon name="shield-halved" style="color: var(--wa-color-blue-400);"></wa-icon>
+            Admin
+            <small>QR Visit Tracker</small>
+        </div>
+        <div style="display:flex;gap:var(--wa-space-2);align-items:center;">
+            <wa-button size="s" variant="neutral" outline id="themeBtn" onclick="toggleTheme()">
+                <wa-icon slot="prefix" name="moon"></wa-icon>
+                Motiv
+            </wa-button>
+            <wa-button size="s" variant="neutral" outline href="../">
+                <wa-icon slot="prefix" name="arrow-left"></wa-icon>
+                Zpět na stránku
+            </wa-button>
+        </div>
+    </header>
+
+    <!-- Obsah -->
+    <main class="admin-content">
+
+        <!-- Metrické karty — hlavní -->
+        <div class="metric-grid" id="metricCards">
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mTotal">
+                    <wa-skeleton effect="pulse" style="width:60px;height:2.2rem;display:inline-block;border-radius:4px;"></wa-skeleton>
+                </div>
+                <div class="metric-lbl">Celkem návštěvníků</div>
+            </wa-card>
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mToday">
+                    <wa-skeleton effect="pulse" style="width:40px;height:2.2rem;display:inline-block;border-radius:4px;"></wa-skeleton>
+                </div>
+                <div class="metric-lbl">Dnes</div>
+            </wa-card>
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mMobile" style="color:var(--wa-color-green-400);">–</div>
+                <div class="metric-lbl">Mobilů celkem</div>
+                <div class="metric-sub" id="mMobilePct" style="color:var(--wa-color-green-400);"></div>
+            </wa-card>
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mDesktop" style="color:var(--wa-color-blue-400);">–</div>
+                <div class="metric-lbl">Desktopů celkem</div>
+                <div class="metric-sub" id="mDesktopPct" style="color:var(--wa-color-blue-400);"></div>
+            </wa-card>
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mBotTotal" style="color:var(--wa-color-red-400);">–</div>
+                <div class="metric-lbl">Botů celkem</div>
+                <div class="metric-sub" id="mBotPct" style="color:var(--wa-color-red-400);"></div>
+            </wa-card>
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mBotToday" style="color:var(--wa-color-red-400);">–</div>
+                <div class="metric-lbl">Botů dnes</div>
+            </wa-card>
+        </div>
+
+        <!-- Scan metriky -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:var(--wa-space-3);margin-bottom:var(--wa-space-5);">
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mScanTotal" style="color:var(--wa-color-yellow-400);">–</div>
+                <div class="metric-lbl">Pravd. QR skenů celkem</div>
+                <div class="metric-sub" id="mScanPct" style="color:var(--wa-color-yellow-400);"></div>
+            </wa-card>
+            <wa-card class="metric-card">
+                <div class="metric-num" id="mScanToday" style="color:var(--wa-color-yellow-400);">–</div>
+                <div class="metric-lbl">Pravd. QR skenů dnes</div>
+            </wa-card>
+            <wa-card style="display:flex;align-items:center;gap:var(--wa-space-2);padding:var(--wa-space-3);">
+                <wa-icon name="circle-info" style="color:var(--wa-color-yellow-400);flex-shrink:0;"></wa-icon>
+                <div style="font-size:var(--wa-font-size-xs);color:var(--wa-color-neutral-400);">
+                    <strong style="color:var(--wa-color-neutral-200);">Metodika:</strong>
+                    Mobilní zařízení + není bot + přímý přístup (bez referreru) nebo referrer obsahuje qr/scan.
+                </div>
+            </wa-card>
+        </div>
+
+        <!-- Grafy řádek 1: čárový + donut -->
+        <div class="charts-row charts-row-2" style="margin-bottom:var(--wa-space-4);">
+            <wa-card>
+                <p class="section-title" slot="header">
+                    <wa-icon name="chart-line" style="color:var(--wa-color-blue-400);"></wa-icon>
+                    Návštěvnost – posledních 30 dní
+                </p>
+                <wa-chart id="lineChart" label="Návštěvnost"></wa-chart>
+            </wa-card>
+            <wa-card>
+                <p class="section-title" slot="header">
+                    <wa-icon name="chart-pie" style="color:var(--wa-color-green-400);"></wa-icon>
+                    Mobil vs. Desktop
+                </p>
+                <wa-chart id="deviceChart" label="Zařízení"></wa-chart>
+            </wa-card>
+        </div>
+
+        <!-- Grafy řádek 2: OS + heatmapa -->
+        <div class="charts-row charts-row-2" style="margin-bottom:var(--wa-space-4);">
+            <wa-card>
+                <p class="section-title" slot="header">
+                    <wa-icon name="laptop" style="color:var(--wa-color-purple-400);"></wa-icon>
+                    Operační systémy
+                </p>
+                <wa-chart id="osChart" label="OS"></wa-chart>
+            </wa-card>
+            <wa-card>
+                <p class="section-title" slot="header">
+                    <wa-icon name="calendar-days" style="color:var(--wa-color-neutral-400);"></wa-icon>
+                    Heatmapa návštěvnosti
+                </p>
+                <div id="heatmap" style="overflow-x:auto;display:flex;flex-wrap:wrap;"></div>
+            </wa-card>
+        </div>
+
+        <!-- Mapa + žebříčky -->
+        <div class="charts-row charts-row-2" style="margin-bottom:var(--wa-space-4);">
+            <wa-card>
+                <p class="section-title" slot="header">
+                    <wa-icon name="globe" style="color:var(--wa-color-blue-400);"></wa-icon>
+                    Geografické rozložení
+                    <wa-badge variant="neutral" size="s">všechna zařízení</wa-badge>
+                </p>
+                <div id="worldMapSpinner" style="display:flex;justify-content:center;padding:var(--wa-space-8);">
+                    <wa-spinner style="font-size:2rem;"></wa-spinner>
+                </div>
+                <canvas id="worldMap" style="display:none;"></canvas>
+            </wa-card>
+            <div style="display:flex;flex-direction:column;gap:var(--wa-space-3);">
+                <wa-card style="flex:1;">
+                    <p class="section-title" slot="header">
+                        <wa-icon name="flag" style="color:var(--wa-color-blue-400);"></wa-icon>
+                        Top země
+                    </p>
+                    <div id="countryRanking" style="font-size:var(--wa-font-size-sm);"></div>
+                </wa-card>
+                <wa-card style="flex:1;">
+                    <p class="section-title" slot="header">
+                        <wa-icon name="wifi" style="color:var(--wa-color-green-400);"></wa-icon>
+                        Top ISP / sítě
+                    </p>
+                    <div id="asnRanking" style="font-size:var(--wa-font-size-sm);"></div>
+                </wa-card>
+            </div>
+        </div>
+
+        <!-- Kampaně -->
+        <wa-card style="margin-bottom:var(--wa-space-4);">
+            <div slot="header" style="display:flex;justify-content:space-between;align-items:center;">
+                <p class="section-title" style="margin:0;">
+                    <wa-icon name="qrcode" style="color:var(--wa-color-blue-400);"></wa-icon>
+                    Kampaně
+                </p>
+                <wa-button size="s" variant="brand" onclick="openNewCampaignDialog()">
+                    <wa-icon slot="prefix" name="plus"></wa-icon>
+                    Nová kampaň
+                </wa-button>
+            </div>
+            <div id="campaignList">
+                <div style="display:flex;justify-content:center;padding:var(--wa-space-6);">
+                    <wa-spinner></wa-spinner>
+                </div>
+            </div>
+        </wa-card>
+
+        <!-- Log návštěv -->
+        <wa-card>
+            <div slot="header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--wa-space-2);">
+                <p class="section-title" style="margin:0;">
+                    <wa-icon name="list-check" style="color:var(--wa-color-blue-400);"></wa-icon>
+                    Log návštěv
+                </p>
+                <span id="logCount" style="font-size:var(--wa-font-size-xs);color:var(--wa-color-neutral-400);"></span>
+            </div>
+
+            <!-- Quick filtry -->
+            <div class="qf-bar">
+                <small>Rychlé filtry:</small>
+                <wa-button size="s" variant="brand" class="qf-btn" data-filter="" onclick="applyQuickFilter(this)">Vše</wa-button>
+                <wa-button size="s" variant="neutral" outline class="qf-btn" data-filter="device=mobile" onclick="applyQuickFilter(this)">
+                    <wa-icon slot="prefix" name="mobile-screen"></wa-icon> Jen mobil
+                </wa-button>
+                <wa-button size="s" variant="neutral" outline class="qf-btn" data-filter="device=desktop" onclick="applyQuickFilter(this)">
+                    <wa-icon slot="prefix" name="display"></wa-icon> Jen desktop
+                </wa-button>
+                <wa-button size="s" variant="neutral" outline class="qf-btn" data-filter="bot=0" onclick="applyQuickFilter(this)">
+                    <wa-icon slot="prefix" name="user-check"></wa-icon> Bez botů
+                </wa-button>
+                <wa-button size="s" variant="danger" outline class="qf-btn" data-filter="bot=1" onclick="applyQuickFilter(this)">
+                    <wa-icon slot="prefix" name="robot"></wa-icon> Jen boti
+                </wa-button>
+                <wa-button size="s" variant="warning" outline class="qf-btn" data-filter="scan=1" onclick="applyQuickFilter(this)">
+                    <wa-icon slot="prefix" name="qrcode"></wa-icon> Pravd. QR
+                </wa-button>
+                <wa-button size="s" variant="neutral" outline class="qf-btn" data-filter="unique=1" onclick="applyQuickFilter(this)">
+                    <wa-icon slot="prefix" name="fingerprint"></wa-icon> Unikátní
+                </wa-button>
+
+                <!-- OS dropdown -->
+                <wa-dropdown>
+                    <wa-button slot="trigger" size="s" variant="neutral" outline caret>OS</wa-button>
+                    <wa-menu>
+                        <wa-menu-item class="qf-btn" data-filter="os=android" onclick="applyQuickFilter(this)">🤖 Android</wa-menu-item>
+                        <wa-menu-item class="qf-btn" data-filter="os=ios"     onclick="applyQuickFilter(this)">🍎 iOS</wa-menu-item>
+                        <wa-menu-item class="qf-btn" data-filter="os=windows" onclick="applyQuickFilter(this)">🪟 Windows</wa-menu-item>
+                        <wa-menu-item class="qf-btn" data-filter="os=mac"     onclick="applyQuickFilter(this)">🍏 Mac</wa-menu-item>
+                        <wa-menu-item class="qf-btn" data-filter="os=linux"   onclick="applyQuickFilter(this)">🐧 Linux</wa-menu-item>
+                    </wa-menu>
+                </wa-dropdown>
+            </div>
+
+            <!-- Datum filtry -->
+            <div class="date-filter">
+                <wa-input type="date" label="Od" id="filterFrom" size="s" style="min-width:150px;"></wa-input>
+                <wa-input type="date" label="Do"  id="filterTo"   size="s" style="min-width:150px;"></wa-input>
+                <wa-button size="s" variant="brand" onclick="loadLogs(true)">
+                    <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
+                    Filtrovat
+                </wa-button>
+                <wa-button size="s" variant="neutral" outline onclick="resetFilter()">
+                    <wa-icon slot="prefix" name="xmark"></wa-icon>
+                    Reset
+                </wa-button>
+            </div>
+
+            <!-- Tabulka -->
+            <div style="overflow-x:auto;">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Čas</th>
+                            <th>Zařízení</th>
+                            <th>OS</th>
+                            <th>Země / ISP</th>
+                            <th>Bot</th>
+                            <th>Fingerprint</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsBody">
+                        <tr><td colspan="7" style="text-align:center;padding:var(--wa-space-6);">
+                            <wa-spinner></wa-spinner>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="loadMoreWrap" style="display:none;text-align:center;margin-top:var(--wa-space-3);">
+                <wa-button size="s" variant="neutral" outline onclick="loadLogs(false)">
+                    <wa-icon slot="prefix" name="arrow-down"></wa-icon>
+                    Načíst další
+                </wa-button>
+            </div>
+        </wa-card>
+
+    </main>
+</div>
+
+<!-- Dialog: nová kampaň -->
+<wa-dialog id="campaignDialog" label="Nová kampaň">
+    <div style="display:flex;flex-direction:column;gap:var(--wa-space-3);">
+        <wa-input id="cName" label="Název kampaně" placeholder="např. BOIT konference Praha 2026" required></wa-input>
+        <wa-input id="cDesc" label="Popis" placeholder="Volitelný popis kampaně"></wa-input>
+        <wa-input id="cStart" type="date" label="Datum spuštění"></wa-input>
+    </div>
+
+    <div id="cResult" style="display:none;margin-top:var(--wa-space-4);">
+        <wa-divider></wa-divider>
+        <p style="color:var(--wa-color-green-400);font-size:var(--wa-font-size-sm);display:flex;align-items:center;gap:var(--wa-space-2);">
+            <wa-icon name="circle-check"></wa-icon> Kampaň vytvořena!
+        </p>
+        <wa-input id="cUrl" label="URL pro QR kód" readonly>
+            <wa-copy-button slot="suffix" id="cCopyBtn"></wa-copy-button>
+        </wa-input>
+        <div class="qr-wrap">
+            <wa-qr-code id="cQrCode" value="" size="180"></wa-qr-code>
+        </div>
+    </div>
+
+    <wa-button slot="footer" variant="neutral" outline onclick="document.getElementById('campaignDialog').hide()">Zavřít</wa-button>
+    <wa-button slot="footer" variant="brand" id="cSubmit" onclick="createCampaign()">
+        <wa-icon slot="prefix" name="plus"></wa-icon>
+        Vytvořit kampaň
+    </wa-button>
+</wa-dialog>
+
+<script>
+// ----------------------------------------
+// Téma
+// ----------------------------------------
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.classList.contains('wa-dark');
+    html.classList.toggle('wa-dark', !isDark);
+    html.classList.toggle('wa-light', isDark);
+    localStorage.setItem('admin-theme', isDark ? 'light' : 'dark');
+}
+// Obnovit motiv
+(function() {
+    const t = localStorage.getItem('admin-theme') || 'dark';
+    document.documentElement.className = `wa-${t}`;
+})();
+
+// ----------------------------------------
+// Stav
+// ----------------------------------------
+let currentCursor  = null;
+let isFirstLoad    = true;
+let activeQFilter  = "";
+
+function applyQuickFilter(el) {
+    document.querySelectorAll('.qf-btn').forEach(b => {
+        if (b.tagName === 'WA-BUTTON') {
+            b.setAttribute('variant', 'neutral');
+            b.setAttribute('outline', '');
+        }
+    });
+    if (el.tagName === 'WA-BUTTON') {
+        el.removeAttribute('outline');
+        const v = el.dataset.filter?.includes('bot=1') ? 'danger'
+               : el.dataset.filter?.includes('scan')   ? 'warning'
+               : 'brand';
+        el.setAttribute('variant', v);
+    }
+    if (!el.dataset.filter) {
+        const allBtn = document.querySelector('.qf-btn[data-filter=""]');
+        if (allBtn) { allBtn.removeAttribute('outline'); allBtn.setAttribute('variant', 'brand'); }
+    }
+    activeQFilter = el.dataset.filter || '';
+    loadLogs(true);
+}
+
+// ----------------------------------------
+// Grafy přes wa-chart
+// ----------------------------------------
+function setWaChart(id, config) {
+    const el = document.getElementById(id);
+    if (el) el.config = config;
+}
+
+async function loadStats() {
+    const res  = await fetch("../api/stats?device=all");
+    const data = await res.json();
+
+    // Metriky
+    document.getElementById("mTotal").textContent = data.total || 0;
+    document.getElementById("mToday").textContent = data.today || 0;
+
+    if (data.deviceBreakdown) {
+        const db  = data.deviceBreakdown;
+        const mob = db.mobile  || 0;
+        const des = db.desktop || 0;
+        const sum = mob + des || 1;
+        document.getElementById("mMobile").textContent  = mob;
+        document.getElementById("mDesktop").textContent = des;
+        document.getElementById("mMobilePct").textContent  = Math.round(mob/sum*100) + " % mobilů";
+        document.getElementById("mDesktopPct").textContent = Math.round(des/sum*100) + " % desktopů";
+    }
+
+    if (data.botBreakdown) {
+        const bb = data.botBreakdown;
+        document.getElementById("mBotTotal").textContent = bb.total || 0;
+        document.getElementById("mBotToday").textContent = bb.today || 0;
+        if (bb.total > 0) {
+            const pct = Math.round(bb.total / ((data.total||0) + bb.total) * 100);
+            document.getElementById("mBotPct").textContent = pct + " % z přístupů";
+        }
+    }
+
+    if (data.scanBreakdown) {
+        const sb = data.scanBreakdown;
+        document.getElementById("mScanTotal").textContent = sb.total || 0;
+        document.getElementById("mScanToday").textContent = sb.today || 0;
+        if (sb.total > 0 && data.total > 0) {
+            document.getElementById("mScanPct").textContent = Math.round(sb.total/data.total*100) + " % mobilů";
+        }
+    }
+
+    // Čárový graf — wa-chart s JSON konfigurací
+    const stats = data.stats || [];
+    setWaChart("lineChart", {
+        type: "line",
+        data: {
+            labels: stats.map(s => s.day),
+            datasets: [{
+                label: "Unikátní návštěvy",
+                data: stats.map(s => s.count),
+                borderColor: "#60a5fa",
+                backgroundColor: "rgba(96,165,250,0.15)",
+                tension: 0.3,
+                fill: true
+            }]
+        }
+    });
+
+    // Donut — zařízení
+    if (data.deviceBreakdown) {
+        const db = data.deviceBreakdown;
+        setWaChart("deviceChart", {
+            type: "doughnut",
+            data: {
+                labels: ["Mobil", "Desktop", "Neznámé"],
+                datasets: [{ data: [db.mobile||0, db.desktop||0, db.unknown||0], backgroundColor: ["#4ade80","#60a5fa","#94a3b8"] }]
+            }
+        });
+    }
+
+    // Bar — OS
+    if (data.osBreakdown) {
+        const os = data.osBreakdown;
+        setWaChart("osChart", {
+            type: "bar",
+            data: {
+                labels: ["Android","iOS","Windows","Mac","Linux","Neznámé"],
+                datasets: [{
+                    label: "Návštěvy",
+                    data: [os.android||0,os.ios||0,os.windows||0,os.mac||0,os.linux||0,os.unknown||0],
+                    backgroundColor: ["#4ade80","#60a5fa","#38bdf8","#c084fc","#fb923c","#94a3b8"]
+                }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+    }
+
+    // Heatmapa (vlastní SVG — wa-chart ji neumí)
+    renderHeatmap(stats);
+
+    // Mapa světa
+    renderCountryRanking(data.countryRanking || []);
+    renderWorldMap(data.countryBreakdown || {});
+    document.getElementById("worldMapSpinner").style.display = "none";
+    document.getElementById("worldMap").style.display = "";
+
+    renderAsnRanking(data.asnRanking || [], "asnRanking", 15);
+}
+
+// ----------------------------------------
+// Kampaně
+// ----------------------------------------
+function openNewCampaignDialog() {
+    document.getElementById("cName").value  = "";
+    document.getElementById("cDesc").value  = "";
+    document.getElementById("cStart").value = new Date().toISOString().slice(0,10);
+    document.getElementById("cResult").style.display = "none";
+    document.getElementById("cSubmit").disabled = false;
+    document.getElementById("campaignDialog").show();
+}
+
+async function createCampaign() {
+    const name  = document.getElementById("cName").value.trim();
+    const desc  = document.getElementById("cDesc").value.trim();
+    const start = document.getElementById("cStart").value;
+    if (!name) { document.getElementById("cName").focus(); return; }
+
+    const btn = document.getElementById("cSubmit");
+    btn.disabled = true;
+    btn.loading  = true;
+
+    try {
+        const res  = await fetch("../api/campaigns", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description: desc, startDate: start })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Chyba");
+
+        const url = `${location.origin}/?utm_campaign=${data.slug}`;
+        document.getElementById("cUrl").value = url;
+        document.getElementById("cCopyBtn").value = url;
+        document.getElementById("cQrCode").value = url;
+        document.getElementById("cResult").style.display = "";
+        btn.textContent = "Vytvořit další";
+        btn.loading = false;
+        btn.disabled = false;
+
+        loadCampaigns();
+    } catch(e) {
+        btn.loading = false;
+        btn.disabled = false;
+    }
+}
+
+async function loadCampaigns() {
+    const container = document.getElementById("campaignList");
+    try {
+        const res  = await fetch("../api/campaigns");
+        const data = await res.json();
+        const list = data.campaigns || [];
+
+        if (list.length === 0) {
+            container.innerHTML = '<p style="color:var(--wa-color-neutral-400);font-size:var(--wa-font-size-sm);text-align:center;padding:var(--wa-space-4);">Zatím žádné kampaně. Vytvořte první.</p>';
+            return;
+        }
+
+        const base = location.origin;
+        container.innerHTML = `
+            <div style="overflow-x:auto;">
+                <table class="camp-table">
+                    <thead><tr>
+                        <th>Název</th>
+                        <th>Spuštěno</th>
+                        <th style="text-align:right;">Skenování</th>
+                        <th></th>
+                    </tr></thead>
+                    <tbody>
+                        ${list.map(c => `
+                        <tr>
+                            <td>
+                                <div style="font-weight:var(--wa-font-weight-semibold);">${c.name}</div>
+                                ${c.description ? `<div style="color:var(--wa-color-neutral-400);font-size:var(--wa-font-size-xs);">${c.description}</div>` : ""}
+                                <code style="font-size:var(--wa-font-size-2xs);color:var(--wa-color-neutral-500);">${c.slug}</code>
+                            </td>
+                            <td style="color:var(--wa-color-neutral-400);white-space:nowrap;font-size:var(--wa-font-size-xs);">
+                                ${new Date(c.startDate).toLocaleDateString("cs-CZ")}
+                            </td>
+                            <td style="text-align:right;">
+                                <span style="font-weight:var(--wa-font-weight-bold);color:var(--wa-color-blue-400);">${c.total}</span>
+                                ${(c.mobile||c.desktop) ? `
+                                <div style="font-size:var(--wa-font-size-2xs);color:var(--wa-color-neutral-400);margin-top:2px;">
+                                    📱 ${c.mobile||0} &nbsp; 🖥 ${c.desktop||0}
+                                </div>` : ""}
+                            </td>
+                            <td>
+                                <div class="camp-actions">
+                                    <wa-tooltip content="Výsledky kampaně">
+                                        <wa-button size="s" variant="neutral" outline href="${base}/kampan/${c.slug}" target="_blank">
+                                            <wa-icon name="chart-bar"></wa-icon>
+                                        </wa-button>
+                                    </wa-tooltip>
+                                    <wa-tooltip content="Otevřít stránku kampaně">
+                                        <wa-button size="s" variant="neutral" outline href="${base}/?utm_campaign=${c.slug}" target="_blank">
+                                            <wa-icon name="arrow-up-right-from-square"></wa-icon>
+                                        </wa-button>
+                                    </wa-tooltip>
+                                    <wa-copy-button value="${base}/?utm_campaign=${c.slug}" copy-label="Kopírovat URL" success-label="Zkopírováno!"></wa-copy-button>
+                                </div>
+                            </td>
+                        </tr>`).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch {
+        container.innerHTML = '<p style="color:var(--wa-color-red-400);font-size:var(--wa-font-size-sm);">Nepodařilo se načíst kampaně.</p>';
+    }
+}
+
+// ----------------------------------------
+// Logy
+// ----------------------------------------
+async function loadLogs(reset = true) {
+    if (reset) {
+        currentCursor = null;
+        isFirstLoad   = true;
+        document.getElementById("logsBody").innerHTML =
+            `<tr><td colspan="7" style="text-align:center;padding:var(--wa-space-6);"><wa-spinner></wa-spinner></td></tr>`;
+    }
+
+    const from = document.getElementById("filterFrom").value;
+    const to   = document.getElementById("filterTo").value;
+    let url = `../api/admin/logs?limit=50`;
+    if (from) url += `&from=${from}`;
+    if (to)   url += `&to=${to}`;
+    if (activeQFilter) url += `&${activeQFilter}`;
+    if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
+
+    const res  = await fetch(url);
+    const data = await res.json();
+    currentCursor = data.nextCursor || null;
+
+    document.getElementById("logCount").textContent = `Zobrazeno: ${data.entries.length} záznamů`;
+
+    const tbody = document.getElementById("logsBody");
+    if (isFirstLoad) { tbody.innerHTML = ""; isFirstLoad = false; }
+
+    if (data.entries.length === 0 && reset) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:var(--wa-space-6);color:var(--wa-color-neutral-400);">Žádné záznamy</td></tr>`;
+    }
+
+    for (const e of data.entries) {
+        const dt      = new Date(e.timestamp);
+        const dateStr = dt.toLocaleDateString("cs-CZ");
+        const timeStr = dt.toLocaleTimeString("cs-CZ");
+        const jsonId  = `json-${e.timestamp}-${Math.random().toString(36).slice(2,6)}`;
+
+        const devVariant = e.deviceType === "mobile" ? "success" : e.deviceType === "desktop" ? "brand" : "neutral";
+        const osIcon = { android:"🤖", ios:"🍎", windows:"🪟", mac:"🍏", linux:"🐧" }[e.os] || "❓";
+
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-bs-toggle", "collapse");
+        tr.setAttribute("data-target", `#${jsonId}`);
+        tr.onclick = () => {
+            const jsonRow = document.getElementById(jsonId);
+            if (jsonRow) jsonRow.style.display = jsonRow.style.display === "none" ? "" : "none";
+        };
+
+        // Buňky přes DOM (ochrana před XSS)
+        const tdTime = document.createElement("td");
+        tdTime.innerHTML = `<div style="font-size:var(--wa-font-size-xs);">${dateStr}</div><div style="color:var(--wa-color-neutral-400);font-size:var(--wa-font-size-2xs);">${timeStr}</div>`;
+
+        const tdDev = document.createElement("td");
+        tdDev.innerHTML = `<wa-badge variant="${devVariant}" size="s">${e.deviceType}</wa-badge>`;
+
+        const tdOs = document.createElement("td");
+        tdOs.textContent = `${osIcon} ${e.os}`;
+
+        const tdGeo = document.createElement("td");
+        const geoText = [e.city, e.country].filter(Boolean).join(", ");
+        const ispText = e.asOrg || "";
+        tdGeo.innerHTML = `<div style="font-size:var(--wa-font-size-xs);">${geoText || "–"}</div>${ispText ? `<div style="color:var(--wa-color-neutral-400);font-size:var(--wa-font-size-2xs);">${ispText}</div>` : ""}`;
+
+        const tdBot = document.createElement("td");
+        tdBot.innerHTML = e.isBot
+            ? `<wa-badge variant="danger" size="s">🤖 bot</wa-badge>`
+            : `<span style="color:var(--wa-color-neutral-500);font-size:var(--wa-font-size-xs);">–</span>`;
+
+        const tdFp = document.createElement("td");
+        const code = document.createElement("code");
+        code.style.cssText = "font-size:var(--wa-font-size-2xs);color:var(--wa-color-neutral-400);font-family:var(--wa-font-mono);";
+        code.textContent = e.fingerprint;
+        tdFp.appendChild(code);
+
+        const tdChevron = document.createElement("td");
+        tdChevron.innerHTML = `<wa-icon name="chevron-down" style="color:var(--wa-color-neutral-400);font-size:var(--wa-font-size-xs);"></wa-icon>`;
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdDev);
+        tr.appendChild(tdOs);
+        tr.appendChild(tdGeo);
+        tr.appendChild(tdBot);
+        tr.appendChild(tdFp);
+        tr.appendChild(tdChevron);
+        tbody.appendChild(tr);
+
+        // Raw JSON řádek
+        const jsonTr = document.createElement("tr");
+        jsonTr.id = jsonId;
+        jsonTr.style.display = "none";
+        const jsonTd = document.createElement("td");
+        jsonTd.setAttribute("colspan", "7");
+        const jsonDiv = document.createElement("div");
+        jsonDiv.className = "raw-json";
+        jsonDiv.textContent = JSON.stringify(e.raw, null, 2);
+        jsonTd.appendChild(jsonDiv);
+        jsonTr.appendChild(jsonTd);
+        tbody.appendChild(jsonTr);
+    }
+
+    const lmw = document.getElementById("loadMoreWrap");
+    lmw.style.display = currentCursor ? "" : "none";
+}
+
+function resetFilter() {
+    document.getElementById("filterFrom").value = "";
+    document.getElementById("filterTo").value   = "";
+    activeQFilter = "";
+    // Reset všech tlačítek
+    document.querySelectorAll(".qf-btn").forEach(b => {
+        if (b.tagName === "WA-BUTTON") {
+            b.setAttribute("variant", "neutral");
+            b.setAttribute("outline", "");
+        }
+    });
+    const allBtn = document.querySelector('.qf-btn[data-filter=""]');
+    if (allBtn) { allBtn.removeAttribute("outline"); allBtn.setAttribute("variant", "brand"); }
+    loadLogs(true);
+}
+
+// Výchozí datum filtru
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("filterTo").value = new Date().toISOString().slice(0,10);
+    loadStats();
+    loadLogs(true);
+    loadCampaigns();
+});
+</script>
+</body>
+</html>
