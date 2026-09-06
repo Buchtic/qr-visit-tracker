@@ -38,6 +38,10 @@ function applyEnglishTexts() {
 
     document.getElementById("chartTitle").textContent = "Visits over time";
     document.getElementById("heatmapTitle").textContent = "Visit heatmap";
+    if (document.getElementById("deviceChartTitle"))
+        document.getElementById("deviceChartTitle").textContent = "Mobile vs. Desktop";
+    if (document.getElementById("osChartTitle"))
+        document.getElementById("osChartTitle").textContent = "Operating Systems";
 
     document.getElementById("nocookiesTitle").textContent = "This project uses 0 cookies";
     document.getElementById("nocookiesText1").textContent =
@@ -87,6 +91,37 @@ function detectDeviceType() {
     }
 
     return "desktop";
+}
+
+function detectOS() {
+    const ua = navigator.userAgent;
+    if (/android/i.test(ua)) return "android";
+    if (/iphone|ipad|ipod/i.test(ua)) return "ios";
+    if (/windows/i.test(ua)) return "windows";
+    if (/macintosh|mac os x/i.test(ua)) return "mac";
+    if (/linux/i.test(ua)) return "linux";
+    return "unknown";
+}
+
+function detectBot() {
+    // 1) WebDriver (Selenium, Puppeteer atd.)
+    if (navigator.webdriver === true) return true;
+
+    // 2) Podezřelý User Agent
+    const ua = navigator.userAgent.toLowerCase();
+    if (/bot|crawl|spider|slurp|bingpreview|facebookexternalhit|headless/i.test(ua)) return true;
+
+    // 3) Nulové hardwarové hodnoty (typické pro headless)
+    if (navigator.hardwareConcurrency === 0) return true;
+    if (navigator.deviceMemory === 0) return true;
+
+    // 4) Chybějící plugins kolekce (headless Chrome ji nemá)
+    if (navigator.plugins && navigator.plugins.length === 0 && !navigator.userAgentData?.mobile) {
+        // Na desktopu bez pluginů + bez dotykového vstupu = podezřelé
+        if (navigator.maxTouchPoints === 0) return true;
+    }
+
+    return false;
 }
 
 
@@ -262,11 +297,11 @@ function translateKey(key) {
 // ---------------------------
 // API calls
 // ---------------------------
-async function sendVisit(fingerprint, deviceType) {
+async function sendVisit(fingerprint, deviceType, os, isBot) {
     const res = await fetch("api/visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fingerprint, deviceType })
+        body: JSON.stringify({ fingerprint, deviceType, os, isBot })
     });
     return await res.json();
 }
@@ -321,6 +356,152 @@ function renderHeatmap(stats) {
 
         container.appendChild(div);
     }
+}
+
+// ---------------------------
+// Desktop / Bot banner
+// ---------------------------
+function showDesktopBanner() {
+    const banner = document.createElement("div");
+    banner.id = "desktopBanner";
+    banner.style.cssText = `
+        background: linear-gradient(135deg, #1c2a3a, #1a2332);
+        border: 1px solid #30363d;
+        border-left: 4px solid #58a6ff;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    `;
+    banner.innerHTML = `
+        <span style="font-size:1.4rem;flex-shrink:0;">🖥️</span>
+        <div>
+            <strong style="color:#58a6ff;">Vypadá to, že jsi na počítači</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
+                QR kódy se skenují hlavně mobilem — tady je dobrý. Statistiky návštěvnosti
+                počítají desktop a mobil zvlášť, takže tato návštěva se projeví v kategorii
+                <em>Desktop</em>. Pokud ti přesto záleží na tom, co se o tobě prozrazuje,
+                čti dál — platí to pro každé zařízení.
+            </p>
+        </div>
+    `;
+
+    const container = document.querySelector(".container");
+    const title = document.getElementById("title");
+    container.insertBefore(banner, title.nextSibling);
+}
+
+function showBotBanner() {
+    const banner = document.createElement("div");
+    banner.id = "botBanner";
+    banner.style.cssText = `
+        background: linear-gradient(135deg, #2a1c1c, #231a1a);
+        border: 1px solid #30363d;
+        border-left: 4px solid #f85149;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    `;
+    banner.innerHTML = `
+        <span style="font-size:1.4rem;flex-shrink:0;">🤖</span>
+        <div>
+            <strong style="color:#f85149;">Detekován automatizovaný přístup</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
+                Zdá se, že tuto stránku navštěvuje bot nebo automatizovaný nástroj.
+                Tato návštěva se nezapočítá do statistik, ale je zalogována pro audit.
+            </p>
+        </div>
+    `;
+
+    const container = document.querySelector(".container");
+    const title = document.getElementById("title");
+    container.insertBefore(banner, title.nextSibling);
+}
+
+// ---------------------------
+// Grafy — device & OS
+// ---------------------------
+function renderDeviceChart(deviceBreakdown) {
+    const canvas = document.getElementById("deviceChart");
+    if (!canvas || !deviceBreakdown) return;
+
+    const isDark = document.body.classList.contains("dark");
+    const labelColor = isDark ? "#c9d1d9" : "#24292f";
+
+    new Chart(canvas.getContext("2d"), {
+        type: "doughnut",
+        data: {
+            labels: ["Mobil", "Desktop", "Neznámé"],
+            datasets: [{
+                data: [
+                    deviceBreakdown.mobile || 0,
+                    deviceBreakdown.desktop || 0,
+                    deviceBreakdown.unknown || 0
+                ],
+                backgroundColor: ["#3fb950", "#58a6ff", "#8b949e"],
+                borderColor: isDark ? "#0d1117" : "#ffffff",
+                borderWidth: 2
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { labels: { color: labelColor } }
+            }
+        }
+    });
+}
+
+function renderOsChart(osBreakdown) {
+    const canvas = document.getElementById("osChart");
+    if (!canvas || !osBreakdown) return;
+
+    const isDark = document.body.classList.contains("dark");
+    const labelColor = isDark ? "#c9d1d9" : "#24292f";
+
+    const labels = ["Android", "iOS", "Windows", "Mac", "Linux", "Neznámé"];
+    const values = [
+        osBreakdown.android || 0,
+        osBreakdown.ios || 0,
+        osBreakdown.windows || 0,
+        osBreakdown.mac || 0,
+        osBreakdown.linux || 0,
+        osBreakdown.unknown || 0
+    ];
+    const colors = ["#3fb950", "#58a6ff", "#0078d4", "#a371f7", "#f0883e", "#8b949e"];
+
+    new Chart(canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{
+                label: isEnglish ? "Visits by OS" : "Návštěvy dle OS",
+                data: values,
+                backgroundColor: colors,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: labelColor },
+                    grid: { color: isDark ? "#21262d" : "#e1e4e8" }
+                },
+                x: {
+                    ticks: { color: labelColor },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
 }
 
 /*
@@ -482,30 +663,42 @@ function getTooltip(key) {
 
 async function init() {
 
-	
-    // 1) jazyková mutace
+    // 1) Jazyková mutace
     if (isEnglish) applyEnglishTexts();
 
-    // 2) získání strukturovaných fingerprint dat
-    const data = await getFingerprintData();	
+    // 2) Detekce zařízení, OS a botů
+    const deviceType = detectDeviceType();
+    const os = detectOS();
+    const isBot = detectBot();
 
+    // 3) Banner podle typu návštěvníka
+    if (isBot) {
+        showBotBanner();
+    } else if (deviceType === "desktop") {
+        showDesktopBanner();
+    }
 
-    // 3) vykreslení fingerprintu do kategorií
+    // 4) Získání strukturovaných fingerprint dat
+    const data = await getFingerprintData();
+
+    // 5) Vykreslení fingerprintu do kategorií
     renderFingerprint(data);
 
-    // 4) poslání fingerprintu na backend
-    const stats = await sendVisit(data.fingerprint,data.deviceType);
+    // 6) Poslání fingerprintu na backend (včetně OS a bot flagu)
+    const stats = await sendVisit(data.fingerprint, deviceType, os, isBot);
 
-    // 5) zobrazení dnešního a celkového počtu
+    // 7) Zobrazení dnešního a celkového počtu
     document.getElementById("counter").textContent = stats.today;
     document.getElementById("totalCounter").textContent = stats.total;
 
-    // 6) načtení statistik pro grafy
+    // 8) Načtení statistik pro grafy
     const fullStats = await loadStats();
 
-    // 7) vykreslení grafu a heatmapy
+    // 9) Vykreslení všech grafů
     renderLineChart(fullStats.stats);
     renderHeatmap(fullStats.stats);
+    renderDeviceChart(fullStats.deviceBreakdown);
+    renderOsChart(fullStats.osBreakdown);
 }
 
 
