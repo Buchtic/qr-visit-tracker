@@ -57,30 +57,43 @@
 
     <!-- Hlavní metriky -->
     <div class="row g-3 mb-3" id="metricCards">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="panel stat-card">
                 <div class="num" id="mTotal">–</div>
                 <div class="lbl">Celkem návštěvníků</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="panel stat-card">
                 <div class="num" id="mToday">–</div>
                 <div class="lbl">Dnes</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="panel stat-card">
                 <div class="num" id="mMobile">–</div>
                 <div class="lbl">Mobilů celkem</div>
                 <div class="lbl" id="mMobilePct" style="color:#3fb950;font-size:0.75rem;"></div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="panel stat-card">
                 <div class="num" id="mDesktop">–</div>
                 <div class="lbl">Desktopů celkem</div>
                 <div class="lbl" id="mDesktopPct" style="color:#58a6ff;font-size:0.75rem;"></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="panel stat-card">
+                <div class="num" id="mBotTotal" style="color:#f85149;">–</div>
+                <div class="lbl">Botů celkem</div>
+                <div class="lbl" id="mBotPct" style="color:#f85149;font-size:0.75rem;"></div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="panel stat-card">
+                <div class="num" id="mBotToday" style="color:#f85149;">–</div>
+                <div class="lbl">Botů dnes</div>
             </div>
         </div>
     </div>
@@ -309,6 +322,17 @@ async function loadStats() {
             Math.round(mob / sum * 100) + " % z mobilů";
         document.getElementById("mDesktopPct").textContent =
             Math.round(desk / sum * 100) + " % z desktopů";
+    }
+
+    if (data.botBreakdown) {
+        const bb = data.botBreakdown;
+        const total = data.total || 1;
+        document.getElementById("mBotTotal").textContent = bb.total || 0;
+        document.getElementById("mBotToday").textContent = bb.today || 0;
+        if (bb.total > 0) {
+            const pct = Math.round(bb.total / (total + bb.total) * 100);
+            document.getElementById("mBotPct").textContent = pct + " % z přístupů";
+        }
     }
 
     renderLineChart(data.stats || []);
