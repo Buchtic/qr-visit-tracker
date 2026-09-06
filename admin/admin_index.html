@@ -136,6 +136,74 @@
         </div>
     </div>
 
+    <!-- Kampaně -->
+    <div class="panel mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 style="font-size:1rem;margin:0;">
+                <i class="bi bi-qr-code me-2" style="color:#58a6ff;"></i>Kampaně
+            </h2>
+            <button class="btn btn-sm btn-outline-light" onclick="openNewCampaignModal()">
+                <i class="bi bi-plus-lg"></i> Nová kampaň
+            </button>
+        </div>
+
+        <div id="campaignList">
+            <p style="color:#8b949e;font-size:0.85rem;">Načítám&hellip;</p>
+        </div>
+    </div>
+
+    <!-- Modal — nová kampaň -->
+    <div class="modal fade" id="campaignModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:inherit;">
+                <div class="modal-header" style="border-color:#30363d;">
+                    <h5 class="modal-title">Nová kampaň</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label style="font-size:0.85rem;color:#8b949e;display:block;margin-bottom:4px;">Název kampaně *</label>
+                        <input type="text" id="cName" class="form-control"
+                               style="background:#0d1117;border-color:#30363d;color:inherit;"
+                               placeholder="např. BOIT konference Praha 2026">
+                    </div>
+                    <div class="mb-3">
+                        <label style="font-size:0.85rem;color:#8b949e;display:block;margin-bottom:4px;">Popis</label>
+                        <input type="text" id="cDesc" class="form-control"
+                               style="background:#0d1117;border-color:#30363d;color:inherit;"
+                               placeholder="Volitelný popis">
+                    </div>
+                    <div class="mb-3">
+                        <label style="font-size:0.85rem;color:#8b949e;display:block;margin-bottom:4px;">Datum spuštění</label>
+                        <input type="date" id="cStart" class="form-control"
+                               style="background:#0d1117;border-color:#30363d;color:inherit;">
+                    </div>
+                    <div id="cResult" style="display:none;" class="mt-3">
+                        <hr style="border-color:#30363d;">
+                        <p style="font-size:0.85rem;color:#3fb950;margin-bottom:8px;">
+                            <i class="bi bi-check-circle"></i> Kampaň vytvořena!
+                        </p>
+                        <div style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;">URL pro QR kód:</div>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <code id="cUrl" style="font-size:0.8rem;background:#0d1117;padding:6px 10px;border-radius:6px;border:1px solid #30363d;flex:1;word-break:break-all;"></code>
+                            <button class="btn btn-sm btn-outline-light flex-shrink-0" onclick="copyUrl()">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <div style="font-size:0.8rem;color:#8b949e;margin:8px 0 4px;">Landing page:</div>
+                        <code id="cLanding" style="font-size:0.8rem;background:#0d1117;padding:6px 10px;border-radius:6px;border:1px solid #30363d;display:block;word-break:break-all;"></code>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-color:#30363d;">
+                    <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Zavřít</button>
+                    <button class="btn btn-primary btn-sm" id="cSubmit" onclick="createCampaign()">
+                        Vytvořit kampaň
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Logy -->
     <div class="panel">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1241,8 +1309,135 @@ function resetFilter() {
 document.getElementById("filterTo").value = new Date().toISOString().slice(0, 10);
 
 // Spustit
+// ----------------------------------------
+// Kampaně
+// ----------------------------------------
+let campaignModal = null;
+
+function openNewCampaignModal() {
+    document.getElementById("cName").value  = "";
+    document.getElementById("cDesc").value  = "";
+    document.getElementById("cStart").value = new Date().toISOString().slice(0, 10);
+    document.getElementById("cResult").style.display = "none";
+    document.getElementById("cSubmit").disabled = false;
+    if (!campaignModal) campaignModal = new bootstrap.Modal(document.getElementById("campaignModal"));
+    campaignModal.show();
+}
+
+function copyUrl() {
+    const url = document.getElementById("cUrl").textContent;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = event.target.closest("button");
+        btn.innerHTML = '<i class="bi bi-check"></i>';
+        setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i>', 2000);
+    });
+}
+
+async function createCampaign() {
+    const name  = document.getElementById("cName").value.trim();
+    const desc  = document.getElementById("cDesc").value.trim();
+    const start = document.getElementById("cStart").value;
+
+    if (!name) {
+        document.getElementById("cName").focus();
+        return;
+    }
+
+    const btn = document.getElementById("cSubmit");
+    btn.disabled = true;
+    btn.textContent = "Vytvářím…";
+
+    try {
+        const res = await fetch("../api/campaigns", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description: desc, startDate: start })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || "Chyba");
+
+        const base = location.origin;
+        const campaignUrl = `${base}/?utm_campaign=${data.slug}`;
+        const landingUrl  = `${base}/kampan/${data.slug}`;
+
+        document.getElementById("cUrl").textContent     = campaignUrl;
+        document.getElementById("cLanding").textContent = landingUrl;
+        document.getElementById("cResult").style.display = "";
+        btn.textContent = "Vytvořit další";
+        btn.disabled = false;
+
+        // Obnovit seznam kampaní
+        loadCampaigns();
+    } catch (e) {
+        btn.textContent = "Chyba — zkusit znovu";
+        btn.disabled = false;
+    }
+}
+
+async function loadCampaigns() {
+    const container = document.getElementById("campaignList");
+    try {
+        const res  = await fetch("../api/campaigns");
+        const data = await res.json();
+        const list = data.campaigns || [];
+
+        if (list.length === 0) {
+            container.innerHTML = '<p style="color:#8b949e;font-size:0.85rem;">Zatím žádné kampaně. Vytvořte první.</p>';
+            return;
+        }
+
+        const base = location.origin;
+        container.innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-dark table-hover" style="font-size:0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Název</th>
+                            <th>Spuštěno</th>
+                            <th style="text-align:right;">Skenování</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.map(c => `
+                            <tr>
+                                <td>
+                                    <div style="font-weight:600;">${c.name}</div>
+                                    ${c.description ? `<div style="color:#8b949e;font-size:0.75rem;">${c.description}</div>` : ""}
+                                    <code style="font-size:0.7rem;color:#8b949e;">${c.slug}</code>
+                                </td>
+                                <td style="color:#8b949e;white-space:nowrap;">
+                                    ${new Date(c.startDate).toLocaleDateString("cs-CZ")}
+                                </td>
+                                <td style="text-align:right;font-weight:700;color:#58a6ff;">
+                                    ${c.total}
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    <a href="${base}/kampan/${c.slug}" target="_blank"
+                                       class="btn btn-sm btn-outline-secondary" title="Landing page">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary ms-1"
+                                            onclick="navigator.clipboard.writeText('${base}/?utm_campaign=${c.slug}')"
+                                            title="Kopírovat URL pro QR">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch {
+        container.innerHTML = '<p style="color:#f85149;font-size:0.85rem;">Nepodařilo se načíst kampaně.</p>';
+    }
+}
+
 loadStats();
 loadLogs(true);
+loadCampaigns();
 </script>
 </body>
 </html>
