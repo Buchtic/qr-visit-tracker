@@ -17,63 +17,64 @@ document.getElementById("themeToggle").addEventListener("click", () => {
 });
 
 // ---------------------------
-// Language detection
+// i18n — načtení lokalizace
 // ---------------------------
-const isEnglish = location.hostname.includes("scanresponsibly.it");
-const deviceType = detectDeviceType();
-function applyEnglishTexts() {
-    document.getElementById("title").textContent = "Don't scan random QR codes";
-    document.getElementById("todayLabel").textContent = "Unique visitors today:";
-    document.getElementById("totalLabel").textContent = "Total unique visitors";
-    document.getElementById("revealTitle").textContent = "What you just revealed";
-    document.getElementById("revealText1").textContent =
-        "These are technical details your browser automatically sent just because you scanned a QR code.";
-    document.getElementById("revealText2").textContent =
-        "A QR code is not just an image. It is a gateway that can lead anywhere — and every website you open learns at least this:";
-    document.getElementById("whyTitle").textContent = "Why scanning random QR codes is risky";
+const LANG = location.hostname.includes("scanresponsibly.it") ? "en" : "cs";
+let _t = {};
 
-    document.getElementById("whyList").innerHTML = `
-        <li>A QR code can lead to phishing or a malicious website.</li>
-        <li>It can trigger a download of harmful files.</li>
-        <li>It can trick you into logging into a fake service.</li>
-        <li>It can be placed over a legitimate QR code.</li>
-        <li><span class="danger">You cannot know where it leads until it's too late.</span></li>
-    `;
+async function loadLocale() {
+    try {
+        const res = await fetch(`/locales/${LANG}.json`);
+        _t = await res.json();
+    } catch (e) {
+        console.warn("i18n: nepodařilo se načíst lokalizaci", e);
+        _t = {};
+    }
+    applyTexts();
+}
 
-    document.getElementById("chartTitle").textContent = "Visits over time";
-    document.getElementById("heatmapTitle").textContent = "Visit heatmap";
-    if (document.getElementById("deviceChartTitle"))
-        document.getElementById("deviceChartTitle").textContent = "Mobile vs. Desktop";
-    if (document.getElementById("osChartTitle"))
-        document.getElementById("osChartTitle").textContent = "Operating Systems";
-    if (document.getElementById("ispTitle"))
-        document.getElementById("ispTitle").textContent = "Top providers";
-    if (document.getElementById("faqTitle"))
-        document.getElementById("faqTitle").textContent = "FAQ";
-    if (document.getElementById("totalMobileLabel"))
-        document.getElementById("totalMobileLabel").textContent = "of which mobile";
-    if (document.getElementById("totalDesktopLabel"))
-        document.getElementById("totalDesktopLabel").textContent = "of which desktop";
-    if (document.getElementById("totalLabel"))
-        document.getElementById("totalLabel").textContent = "Total visitors";
+function t(key) { return _t[key] ?? key; }
+function tFp(key) { return _t?.fp?.[key] ?? key; }
 
-    document.getElementById("nocookiesTitle").textContent = "This project uses 0 cookies";
-    document.getElementById("nocookiesText1").textContent =
-        "No cookies, no trackers, no analytics. Everything stays in your browser.";
-    document.getElementById("nocookiesText2").textContent =
-        "The goal is to show how easily any website can collect technical information about your device — without consent.";
+function applyTexts() {
+    const set = (id, val, html = false) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (html) el.innerHTML = val; else el.textContent = val;
+    };
 
-    document.getElementById("motivationTitle").textContent = "Why this project exists";
-    document.getElementById("motivationText").textContent =
-        "People scan QR codes without thinking. This project is a simple demonstration of what you reveal by doing so.";
+    set("title",             t("title"));
+    set("todayLabel",        t("todayLabel"));
+    set("totalLabel",        t("totalLabel"));
+    set("revealTitle",       t("revealTitle"));
+    set("revealText1",       t("revealText1"));
+    set("revealText2",       t("revealText2"));
+    set("whyTitle",          t("whyTitle"));
+    set("chartTitle",        t("chartTitle"));
+    set("heatmapTitle",      t("heatmapTitle"));
+    set("nocookiesTitle",    t("nocookiesTitle"));
+    set("nocookiesText1",    t("nocookiesText1"));
+    set("nocookiesText2",    t("nocookiesText2"));
+    set("motivationTitle",   t("motivationTitle"));
+    set("motivationText",    t("motivationText"));
+    set("contactTitle",      t("contactTitle"));
+    set("contactText",       t("contactText"));
+    set("trainingTitle",     t("trainingTitle"));
+    set("trainingText",      t("trainingText"), true);
+    set("deviceChartTitle",  t("deviceChartTitle"));
+    set("osChartTitle",      t("osChartTitle"));
+    set("ispTitle",          t("ispTitle"));
+    set("faqTitle",          t("faqTitle"));
+    set("totalMobileLabel",  t("totalMobileLabel"));
+    set("totalDesktopLabel", t("totalDesktopLabel"));
 
-    document.getElementById("contactTitle").textContent = "Want to collaborate?";
-    document.getElementById("contactText").textContent =
-        "If you want to extend this project or build your own awareness campaign:";
+    const whyEl = document.getElementById("whyList");
+    if (whyEl && Array.isArray(_t.whyList)) {
+        whyEl.innerHTML = _t.whyList.map(item => `<li>${item}</li>`).join("");
+    }
 
-    document.getElementById("trainingTitle").textContent = "If you want real training…";
-    document.getElementById("trainingText").innerHTML =
-        `We recommend <strong><a href="https://boit.cz" target="_blank" class="text-decoration-none" style="color:#58a6ff;">BOIT Cyber Security</a></strong>.`;
+    document.documentElement.lang = LANG;
+    document.title = t("title");
 }
 
 // ---------------------------
@@ -260,6 +261,9 @@ async function getFingerprintData() {
 }
 
 function translateKey(key) {
+    // Překlad klíče fingerprintu přes i18n JSON
+    const translated = tFp(key);
+    if (translated !== key) return translated;
     const map = {
         "User Agent": "User Agent",
         "Language": "Jazyk",
@@ -355,13 +359,8 @@ function showDesktopBanner() {
     banner.innerHTML = `
         <span style="font-size:1.4rem;flex-shrink:0;">🖥️</span>
         <div>
-            <strong style="color:#58a6ff;">Vypadá to, že jsi na počítači</strong>
-            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
-                QR kódy se skenují hlavně mobilem &ndash; tady je dobrý. Statistiky návštěvnosti
-                počítají desktop a mobil zvlášť, takže tato návštěva se projeví v kategorii
-                <em>Desktop</em>. Pokud ti přesto záleží na tom, co se o tobě prozrazuje,
-                čti dál &ndash; platí to pro každé zařízení.
-            </p>
+            <strong style="color:#58a6ff;">${t("bannerDesktop.title")}</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">${t("bannerDesktop.text")}</p>
         </div>
     `;
     const container = document.querySelector(".container");
@@ -386,11 +385,8 @@ function showBotBanner() {
     banner.innerHTML = `
         <span style="font-size:1.4rem;flex-shrink:0;">🤖</span>
         <div>
-            <strong style="color:#f85149;">Detekován automatizovaný přístup</strong>
-            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
-                Zdá se, že tuto stránku navštěvuje bot nebo automatizovaný nástroj.
-                Tato návštěva se nezapočítá do statistik, ale je zalogována pro audit.
-            </p>
+            <strong style="color:#f85149;">${t("bannerBot.title")}</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">${t("bannerBot.text")}</p>
         </div>
     `;
     const container = document.querySelector(".container");
@@ -415,13 +411,8 @@ function showReturningBanner() {
     banner.innerHTML = `
         <span style="font-size:1.4rem;flex-shrink:0;">👋</span>
         <div>
-            <strong style="color:#3fb950;">Poznali jsme tě</strong>
-            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">
-                Dnes jsi tuto stránku navštívil/a už jednou. Rozpoznali jsme tě
-                podle otisku tvého zařízení &ndash; bez cookies, bez přihlášení,
-                bez jakékoliv interakce z tvé strany.
-                <br>Tohle je přesně to, co umí každý web.
-            </p>
+            <strong style="color:#3fb950;">${t("bannerReturning.title")}</strong>
+            <p style="margin:4px 0 0;color:#8b949e;font-size:0.9rem;">${t("bannerReturning.text")}</p>
         </div>
     `;
     const container = document.querySelector(".container");
@@ -621,7 +612,7 @@ function getTooltip(key) {
 // Init
 // ---------------------------
 /*async function init() {
-    if (isEnglish) applyEnglishTexts();
+    await loadLocale();
 
     const data = await getFingerprintData();
 
@@ -647,7 +638,7 @@ function getTooltip(key) {
 async function init() {
 
     // 1) Jazyková mutace
-    if (isEnglish) applyEnglishTexts();
+    await loadLocale();
 
     // 2) Detekce zařízení, OS, botů a UTM parametru z URL
     const deviceType  = detectDeviceType();
@@ -690,12 +681,12 @@ async function init() {
         const networkEl = document.getElementById("fp-network");
         if (networkEl) {
             const items = [];
-            if (geo.city)    items.push({ k: "Město",           v: geo.city });
+            if (geo.city)    items.push({ k: _t?.geo?.city ?? "Město",              v: geo.city });
             if (geo.region && geo.region !== geo.city)
-                             items.push({ k: "Region",          v: geo.region });
-            if (geo.asOrg)   items.push({ k: "Poskytovatel (ISP)", v: geo.asOrg });
+                             items.push({ k: _t?.geo?.region ?? "Region",           v: geo.region });
+            if (geo.asOrg)   items.push({ k: _t?.geo?.isp ?? "Poskytovatel (ISP)", v: geo.asOrg });
             if (geo.isEU !== undefined)
-                             items.push({ k: "EU návštěvník",   v: geo.isEU ? "Ano" : "Ne" });
+                             items.push({ k: _t?.geo?.eu ?? "EU návštěvník",        v: geo.isEU ? (_t?.geo?.yes ?? "Ano") : (_t?.geo?.no ?? "Ne") });
 
             for (const { k, v } of items) {
                 const li = document.createElement("li");

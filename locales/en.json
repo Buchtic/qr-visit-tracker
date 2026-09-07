@@ -1,0 +1,96 @@
+{
+  "title": "Don't scan random QR codes",
+  "todayLabel": "Unique visitors today:",
+  "totalLabel": "Total unique visitors",
+  "totalMobileLabel": "of which mobile",
+  "totalDesktopLabel": "of which desktop",
+
+  "revealTitle": "What you just revealed",
+  "revealText1": "These are technical details your browser automatically sent just because you scanned a QR code.",
+  "revealText2": "A QR code is not just an image. It is a gateway that can lead anywhere — and every website you open learns at least this:",
+
+  "whyTitle": "Why scanning random QR codes is risky",
+  "whyList": [
+    "A QR code can lead to phishing or a malicious website.",
+    "It can trigger a download of harmful files.",
+    "It can trick you into logging into a fake service.",
+    "It can be placed over a legitimate QR code.",
+    "<span class=\"danger\">You cannot know where it leads until it's too late.</span>"
+  ],
+
+  "chartTitle": "Visits over time",
+  "heatmapTitle": "Visit heatmap",
+  "deviceChartTitle": "Mobile vs. Desktop",
+  "osChartTitle": "Operating Systems",
+  "ispTitle": "Top providers",
+  "geoTitle": "Where visitors came from",
+  "geoTitleSuffix": "(mobile devices)",
+  "geoNote": "Geolocation and internet provider are determined from IP address via Cloudflare – accuracy at country level.",
+  "faqTitle": "FAQ",
+
+  "nocookiesTitle": "This project uses 0 cookies",
+  "nocookiesText1": "No cookies, no trackers, no third-party analytics. Everything stays in your browser.",
+  "nocookiesText2": "The goal is to show how easily any website can collect technical information about your device — without consent.",
+
+  "motivationTitle": "Why this project exists",
+  "motivationText": "People scan QR codes without thinking. This project is a simple demonstration of what you reveal by doing so.",
+
+  "contactTitle": "Want to collaborate?",
+  "contactText": "If you want to extend this project or build your own awareness campaign:",
+
+  "trainingTitle": "If you want real training…",
+  "trainingText": "We recommend <strong><a href=\"https://boit.cz\" target=\"_blank\" class=\"text-decoration-none\" style=\"color:#58a6ff;\">BOIT Cyber Security</a></strong>.",
+
+  "bannerDesktop": {
+    "title": "Looks like you're on a computer",
+    "text": "QR codes are mostly scanned on mobile — that's fine. Statistics count desktop and mobile separately, so this visit will show up under <em>Desktop</em>. If you still care about what you reveal, read on — it applies to every device."
+  },
+  "bannerBot": {
+    "title": "Automated access detected",
+    "text": "It looks like this page is being visited by a bot or automated tool. This visit will not be counted in statistics, but is logged for audit purposes."
+  },
+  "bannerReturning": {
+    "title": "We recognised you",
+    "text": "You've visited this page once already today. We recognised you by your device fingerprint — no cookies, no login, no interaction required.<br>This is exactly what any website can do."
+  },
+
+  "geo": {
+    "city": "City",
+    "region": "Region",
+    "isp": "Internet provider (ISP)",
+    "eu": "EU visitor",
+    "yes": "Yes",
+    "no": "No"
+  },
+
+  "fp": {
+    "Fingerprint (SHA-256)": "Fingerprint (SHA-256)",
+    "User Agent": "User Agent",
+    "Jazyk prohlížeče": "Browser language",
+    "Časová zóna": "Time zone",
+    "Platforma": "Platform",
+    "Počet CPU vláken": "CPU threads",
+    "Paměť RAM (GB)": "RAM memory (GB)",
+    "Rozlišení displeje": "Screen resolution",
+    "Hloubka barev (bit)": "Color depth (bit)",
+    "Poměr stran (DPR)": "Device pixel ratio",
+    "Dotykový displej": "Touch screen",
+    "Max dotykových bodů": "Max touch points",
+    "Typ zařízení": "Device type",
+    "Webdriver": "Webdriver",
+    "Do Not Track": "Do Not Track",
+    "Renderer (GPU)": "Renderer (GPU)",
+    "Podpora WebGL": "WebGL support",
+    "Network Type": "Network type",
+    "Downlink (Mb/s)": "Download speed (Mb/s)",
+    "RTT (ms)": "Latency (ms)",
+    "Save Data Mode": "Data saver mode",
+    "Město": "City",
+    "Region": "Region",
+    "Poskytovatel (ISP)": "Internet provider (ISP)",
+    "EU návštěvník": "EU visitor"
+  },
+
+  "campaignBadge": "Campaign",
+  "countryRankingTitle": "Top countries"
+}
