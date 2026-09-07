@@ -34,7 +34,7 @@ async function loadLocale() {
 }
 
 function t(key) { return _t[key] ?? key; }
-function tFp(key) { return _t?.fp?.[key] ?? key; }
+function tFp(key) { return t("fp." + key); }
 
 function applyTexts() {
     const set = (id, val, html = false) => {
@@ -75,6 +75,16 @@ function applyTexts() {
 
     document.documentElement.lang = LANG;
     document.title = t("title");
+
+    // FAQ otázky — jen nadpisy tlačítek (odpovědi zůstávají v HTML)
+    const faqKeys = ["faq.q1","faq.q2","faq.q3","faq.q4","faq.q5","faq.q6","faq.q7","faq.q8"];
+    document.querySelectorAll("#faqAccordion .accordion-button").forEach((btn, i) => {
+        if (faqKeys[i] && t(faqKeys[i]) !== faqKeys[i]) btn.textContent = t(faqKeys[i]);
+    });
+
+    // Vlaječka v topbaru
+    const flagEl = document.getElementById("langFlag");
+    if (flagEl) flagEl.textContent = t("lang.flag");
 }
 
 // ---------------------------
@@ -681,12 +691,12 @@ async function init() {
         const networkEl = document.getElementById("fp-network");
         if (networkEl) {
             const items = [];
-            if (geo.city)    items.push({ k: _t?.geo?.city ?? "Město",              v: geo.city });
+            if (geo.city)    items.push({ k: t("geo.city"),  v: geo.city });
             if (geo.region && geo.region !== geo.city)
-                             items.push({ k: _t?.geo?.region ?? "Region",           v: geo.region });
-            if (geo.asOrg)   items.push({ k: _t?.geo?.isp ?? "Poskytovatel (ISP)", v: geo.asOrg });
+                             items.push({ k: t("geo.region"), v: geo.region });
+            if (geo.asOrg)   items.push({ k: t("geo.isp"),    v: geo.asOrg });
             if (geo.isEU !== undefined)
-                             items.push({ k: _t?.geo?.eu ?? "EU návštěvník",        v: geo.isEU ? (_t?.geo?.yes ?? "Ano") : (_t?.geo?.no ?? "Ne") });
+                             items.push({ k: t("geo.eu"),      v: geo.isEU ? t("geo.yes") : t("geo.no") });
 
             for (const { k, v } of items) {
                 const li = document.createElement("li");

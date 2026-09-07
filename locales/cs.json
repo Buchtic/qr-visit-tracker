@@ -4,11 +4,9 @@
   "totalLabel": "Celkem unikátních návštěvníků",
   "totalMobileLabel": "z toho mobilní",
   "totalDesktopLabel": "z toho desktop",
-
   "revealTitle": "Co jsi právě prozradil/a",
   "revealText1": "Toto jsou technické údaje, které tvůj prohlížeč automaticky odeslal jen proto, že jsi naskenoval/a QR kód.",
   "revealText2": "QR kód není jen obrázek. Je to brána, která může vést kamkoliv – a každý web, který otevřeš, se dozví přinejmenším toto:",
-
   "whyTitle": "Proč je skenování náhodných QR kódů riskantní",
   "whyList": [
     "QR kód může vést na phishing nebo škodlivý web.",
@@ -17,7 +15,6 @@
     "Může být přelepen přes legitimní QR kód.",
     "<span class=\"danger\">Nevíš kam vede, dokud není pozdě.</span>"
   ],
-
   "chartTitle": "Návštěvnost v čase",
   "heatmapTitle": "Heatmapa návštěvnosti",
   "deviceChartTitle": "Mobil vs. Desktop",
@@ -27,70 +24,63 @@
   "geoTitleSuffix": "(mobilní zařízení)",
   "geoNote": "Geolokace a poskytovatel internetu jsou určeny podle IP adresy přes Cloudflare – přesnost na úrovni státu.",
   "faqTitle": "Časté otázky",
-
   "nocookiesTitle": "Tento projekt je 100% bez cookies",
   "nocookiesText1": "Žádné cookies, žádné trackery, žádná analytika třetích stran. Vše zůstává v prohlížeči.",
   "nocookiesText2": "Cílem je ukázat, jak snadno může jakýkoliv web sbírat technické informace o tvém zařízení – bez souhlasu.",
-
   "motivationTitle": "Proč tento projekt existuje",
   "motivationText": "Lidé skenují QR kódy bez přemýšlení. Tento projekt je jednoduchá ukázka toho, co tím prozradíte.",
-
   "contactTitle": "Chceš spolupracovat?",
   "contactText": "Pokud chceš rozšířit tento projekt nebo vybudovat vlastní osvětovou kampaň:",
-
   "trainingTitle": "Chceš opravdové školení…",
   "trainingText": "Doporučujeme <strong><a href=\"https://boit.cz\" target=\"_blank\" class=\"text-decoration-none\" style=\"color:#58a6ff;\">BOIT Cyber Security</a></strong>.",
-
-  "bannerDesktop": {
-    "title": "Vypadá to, že jsi na počítači",
-    "text": "QR kódy se skenují hlavně mobilem – tady je dobrý. Statistiky počítají desktop a mobil zvlášť, takže tato návštěva se projeví v kategorii <em>Desktop</em>. Pokud ti přesto záleží na tom, co se o tobě prozrazuje, čti dál – platí to pro každé zařízení."
-  },
-  "bannerBot": {
-    "title": "Detekován automatizovaný přístup",
-    "text": "Zdá se, že tuto stránku navštěvuje bot nebo automatizovaný nástroj. Tato návštěva se nezapočítá do statistik, ale je zalogována pro audit."
-  },
-  "bannerReturning": {
-    "title": "Poznali jsme tě",
-    "text": "Dnes jsi tuto stránku navštívil/a už jednou. Rozpoznali jsme tě podle otisku tvého zařízení – bez cookies, bez přihlášení, bez jakékoliv interakce z tvé strany.<br>Tohle je přesně to, co umí každý web."
-  },
-
-  "geo": {
-    "city": "Město",
-    "region": "Region",
-    "isp": "Poskytovatel (ISP)",
-    "eu": "EU návštěvník",
-    "yes": "Ano",
-    "no": "Ne"
-  },
-
-  "fp": {
-    "Fingerprint (SHA-256)": "Fingerprint (SHA-256)",
-    "User Agent": "User Agent",
-    "Jazyk prohlížeče": "Jazyk prohlížeče",
-    "Časová zóna": "Časová zóna",
-    "Platforma": "Platforma",
-    "Počet CPU vláken": "Počet CPU vláken",
-    "Paměť RAM (GB)": "Paměť RAM (GB)",
-    "Rozlišení displeje": "Rozlišení displeje",
-    "Hloubka barev (bit)": "Hloubka barev (bit)",
-    "Poměr stran (DPR)": "Poměr stran (DPR)",
-    "Dotykový displej": "Dotykový displej",
-    "Max dotykových bodů": "Max dotykových bodů",
-    "Typ zařízení": "Typ zařízení",
-    "Webdriver": "Webdriver",
-    "Do Not Track": "Do Not Track",
-    "Renderer (GPU)": "Renderer (GPU)",
-    "Podpora WebGL": "Podpora WebGL",
-    "Network Type": "Typ připojení",
-    "Downlink (Mb/s)": "Rychlost stahování (Mb/s)",
-    "RTT (ms)": "Latence (ms)",
-    "Save Data Mode": "Režim šetření dat",
-    "Město": "Město",
-    "Region": "Region",
-    "Poskytovatel (ISP)": "Poskytovatel (ISP)",
-    "EU návštěvník": "EU návštěvník"
-  },
-
+  "bannerDesktop.title": "Vypadá to, že jsi na počítači",
+  "bannerDesktop.text": "QR kódy se skenují hlavně mobilem – tady je dobrý. Statistiky počítají desktop a mobil zvlášť, takže tato návštěva se projeví v kategorii <em>Desktop</em>. Pokud ti přesto záleží na tom, co se o tobě prozrazuje, čti dál – platí to pro každé zařízení.",
+  "bannerBot.title": "Detekován automatizovaný přístup",
+  "bannerBot.text": "Zdá se, že tuto stránku navštěvuje bot nebo automatizovaný nástroj. Tato návštěva se nezapočítá do statistik, ale je zalogována pro audit.",
+  "bannerReturning.title": "Poznali jsme tě",
+  "bannerReturning.text": "Dnes jsi tuto stránku navštívil/a už jednou. Rozpoznali jsme tě podle otisku tvého zařízení – bez cookies, bez přihlášení, bez jakékoliv interakce z tvé strany.<br>Tohle je přesně to, co umí každý web.",
+  "geo.city": "Město",
+  "geo.region": "Region",
+  "geo.isp": "Poskytovatel (ISP)",
+  "geo.eu": "EU návštěvník",
+  "geo.yes": "Ano",
+  "geo.no": "Ne",
+  "fp.Fingerprint (SHA-256)": "Fingerprint (SHA-256)",
+  "fp.User Agent": "User Agent",
+  "fp.Jazyk prohlížeče": "Jazyk prohlížeče",
+  "fp.Časová zóna": "Časová zóna",
+  "fp.Platforma": "Platforma",
+  "fp.Počet CPU vláken": "Počet CPU vláken",
+  "fp.Paměť RAM (GB)": "Paměť RAM (GB)",
+  "fp.Rozlišení displeje": "Rozlišení displeje",
+  "fp.Hloubka barev (bit)": "Hloubka barev (bit)",
+  "fp.Poměr stran (DPR)": "Poměr stran (DPR)",
+  "fp.Dotykový displej": "Dotykový displej",
+  "fp.Max dotykových bodů": "Max dotykových bodů",
+  "fp.Typ zařízení": "Typ zařízení",
+  "fp.Webdriver": "Webdriver",
+  "fp.Do Not Track": "Do Not Track",
+  "fp.Renderer (GPU)": "Renderer (GPU)",
+  "fp.Podpora WebGL": "Podpora WebGL",
+  "fp.Network Type": "Typ připojení",
+  "fp.Downlink (Mb/s)": "Rychlost stahování (Mb/s)",
+  "fp.RTT (ms)": "Latence (ms)",
+  "fp.Save Data Mode": "Režim šetření dat",
+  "fp.Město": "Město",
+  "fp.Region": "Region",
+  "fp.Poskytovatel (ISP)": "Poskytovatel (ISP)",
+  "fp.EU návštěvník": "EU návštěvník",
   "campaignBadge": "Kampaň",
-  "countryRankingTitle": "Top země"
+  "countryRankingTitle": "Top země",
+  "faq.title": "Časté otázky",
+  "faq.q1": "Co je to fingerprint a jak vzniká?",
+  "faq.q2": "Jak se určuje typ zařízení (mobil vs. desktop)?",
+  "faq.q3": "Proč jsou data o Apple OS nepřesná?",
+  "faq.q4": "Co jsou roboti a proč je vidím v datech?",
+  "faq.q5": "Jak se chránit před sledováním přes QR kódy?",
+  "faq.q6": "Lze poznat, kam QR kód vede, ještě před naskenováním?",
+  "faq.q7": "Víte kde bydlím? Jak znáte moje město a poskytovatele internetu?",
+  "faq.q8": "Jsou tato data opravdu bez cookies a GDPR-friendly?",
+  "lang.flag": "🇨🇿",
+  "lang.label": "Čeština"
 }
