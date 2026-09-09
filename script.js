@@ -149,6 +149,9 @@ function applyTexts() {
         if (faqBodyKeys[i] && t(faqBodyKeys[i]) !== faqBodyKeys[i]) body.innerHTML = t(faqBodyKeys[i]);
     });
 
+    // GitHub odkaz
+    set("githubText", t("githubText"));
+
     // Vlaječka v topbaru — kliknutím přepne jazyk
     const flagEl = document.getElementById("langFlag");
     if (flagEl) {
