@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-<!-- Téma bez záblesku — přečte localStorage před renderem -->
+<!-- Téma bez záblesku &ndash; přečte localStorage před renderem -->
 <script>
 (function() {
     var t = localStorage.getItem('theme');
@@ -26,11 +26,11 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<meta name="build" content="20260909-1301">
+<meta name="build" content="20260909-13012">
 
 <link rel="stylesheet" href="styles.css">
 
-<!-- Cache busting — změňte content v meta[name="build"] po každém deployi -->
+<!-- Cache busting &ndash; změňte content v meta[name="build"] po každém deployi -->
 <script>
 (function() {
     var b = document.head.querySelector('meta[name="build"]').content;
@@ -54,7 +54,7 @@
     </div>
 	<h1 id="title" class="text-center">Neskenuj náhodné QR kódy</h1>
 
-    <!-- Campaign badge — zobrazí se jen když přijdeš přes utm_campaign -->
+    <!-- Campaign badge &ndash; zobrazí se jen když přijdeš přes utm_campaign -->
     <div id="campaignBadge" style="display:none;" class="text-center mb-3">
         <div style="
             display:inline-block;
@@ -187,11 +187,11 @@
         </ul>
     </div>
 
-    <!-- Quishing — reálné případy -->
+    <!-- Quishing &ndash; reálné případy -->
     <div class="panel" id="quishingPanel">
         <h2 id="quishingTitle">
             <span style="color:#f0883e;">⚠️</span>
-            <span id="quishingTitleText">Quishing — kdy to doopravdy bolelo</span>
+            <span id="quishingTitleText">Quishing &ndash; kdy to doopravdy bolelo</span>
         </h2>
         <p id="quishingIntro" style="color:#8b949e;margin-bottom:20px;">
             Tohle nejsou hypotetické hrozby. Tady jsou zdokumentované případy
@@ -200,16 +200,16 @@
 
         <div class="row g-3" id="quishingCards">
 
-            <!-- Praha — EasyPark -->
+            <!-- Praha &ndash; EasyPark -->
             <div class="col-md-6 col-lg-4">
                 <div class="quishing-card">
                     <div class="quishing-icon">🚗</div>
-                    <div class="quishing-where" id="qc1where">Praha, Česko &mdash; 2024</div>
+                    <div class="quishing-where" id="qc1where">Praha, Česko &ndash; 2024</div>
                     <div class="quishing-title" id="qc1title">Falešné EasyPark na parkovacích automatech</div>
                     <p class="quishing-text" id="qc1text">
                         Podvodníci přelepili parkovací automaty v centru Prahy růžovými samolepkami
                         dokonale imitujícími EasyPark. Řidiči zaplatili podvodníkům místo městu
-                        &mdash; a navíc dostali pokutu za nezaplacené parkovné.
+                        &ndash; a navíc dostali pokutu za nezaplacené parkovné.
                     </p>
                     <a id="qc1source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://radiozurnal.rozhlas.cz/qr-kod-muze-prelepit-kazdy-jak-se-nenachytat-podvodniky-s-parkovanim-a-cim-jim-9337877" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Radiožurnál / iROZHLAS</a>
                     <div class="quishing-lesson" id="qc1lesson">
@@ -219,11 +219,11 @@
                 </div>
             </div>
 
-            <!-- Velká Británie — 3,5M liber -->
+            <!-- Velká Británie &ndash; 3,5M liber -->
             <div class="col-md-6 col-lg-4">
                 <div class="quishing-card">
                     <div class="quishing-icon">🇬🇧</div>
-                    <div class="quishing-where" id="qc2where">Velká Británie &mdash; 2024/2025</div>
+                    <div class="quishing-where" id="qc2where">Velká Británie &ndash; 2024/2025</div>
                     <div class="quishing-title" id="qc2title">800 hlášení, £3,5 milionu ukradeno</div>
                     <p class="quishing-text" id="qc2text">
                         Action Fraud evidoval téměř 800 hlášení QR podvodů za 12 měsíců do dubna 2025.
@@ -238,30 +238,30 @@
                 </div>
             </div>
 
-            <!-- Thornaby — £13 000 -->
+            <!-- Thornaby &ndash; £13 000 -->
             <div class="col-md-6 col-lg-4">
                 <div class="quishing-card quishing-card--severe">
                     <div class="quishing-icon">🚉</div>
-                    <div class="quishing-where" id="qc3where">Thornaby, UK &mdash; 2024</div>
+                    <div class="quishing-where" id="qc3where">Thornaby, UK &ndash; 2024</div>
                     <div class="quishing-title" id="qc3title">£13 000 ukradeno na nádraží</div>
                     <p class="quishing-text" id="qc3text">
-                        Žena naskenovala QR kód na nádraží v Thornaby &mdash; kód vypadal jako
+                        Žena naskenovala QR kód na nádraží v Thornaby &ndash; kód vypadal jako
                         součást legitimní informační tabule. Falešná stránka ji přiměla zadat
                         platební údaje. Z účtu zmizelo přes 13 000 liber (přibližně 380 000 Kč).
                     </p>
                     <a id="qc3source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.friendsagainstscams.org.uk/news-and-updates/qr-code-scams-quishing" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Friends Against Scams UK</a>
                     <div class="quishing-lesson" id="qc3lesson">
                         <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc3lessonText">QR kód na veřejném místě nevypadá podezřele — proto jsou tyhle podvody tak účinné.</span>
+                        <span id="qc3lessonText">QR kód na veřejném místě nevypadá podezřele &ndash; proto jsou tyhle podvody tak účinné.</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Texas — 100 automatů -->
+            <!-- Texas &ndash; 100 automatů -->
             <div class="col-md-6 col-lg-4">
                 <div class="quishing-card">
                     <div class="quishing-icon">🇺🇸</div>
-                    <div class="quishing-where" id="qc4where">Texas, USA &mdash; 2021/2022</div>
+                    <div class="quishing-where" id="qc4where">Texas, USA &ndash; 2021/2022</div>
                     <div class="quishing-title" id="qc4title">100+ parkovacích automatů v San Antoniu</div>
                     <p class="quishing-text" id="qc4text">
                         Podvodníci v San Antoniu polepili více než 100 platebních automatů
@@ -272,22 +272,22 @@
                     <a id="qc4source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://insmart.cz/pozor-na-podvody-s-qr-kody/" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Austin Transportation Dept.</a>
                     <div class="quishing-lesson" id="qc4lesson">
                         <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc4lessonText">Podvod je škálovatelný — vytvořit samolepku s QR kódem zvládne každý za pár korun.</span>
+                        <span id="qc4lessonText">Podvod je škálovatelný &ndash; vytvořit samolepku s QR kódem zvládne každý za pár korun.</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Česko — charita tornádo -->
+            <!-- Česko &ndash; charita tornádo -->
             <div class="col-md-6 col-lg-4">
                 <div class="quishing-card">
                     <div class="quishing-icon">🌪️</div>
-                    <div class="quishing-where" id="qc5where">Česko &mdash; 2021</div>
+                    <div class="quishing-where" id="qc5where">Česko &ndash; 2021</div>
                     <div class="quishing-title" id="qc5title">Falešná sbírka po tornádu na jihu Moravy</div>
                     <p class="quishing-text" id="qc5text">
                         Po tornádu na jihu Moravy lidé chtěli pomoci. Mladík umístil vedle
                         sbírkových materiálů Diecézní charity Brno falešný QR kód vedoucí
                         na jeho vlastní účet. Naštěstí ho policie dopadla dřív, než mu
-                        kdokoliv peníze poslal. Případ skončil dobře — ale varování platí.
+                        kdokoliv peníze poslal. Případ skončil dobře &ndash; ale varování platí.
                     </p>
                     <a id="qc5source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://blog.avast.com/cs/malicious-qr-codes-found-in-austin-avast" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Avast Blog / Policie ČR</a>
                     <div class="quishing-lesson" id="qc5lesson">
@@ -297,41 +297,41 @@
                 </div>
             </div>
 
-            <!-- Retailer — 200 prodejen -->
+            <!-- Retailer &ndash; 200 prodejen -->
             <div class="col-md-6 col-lg-4">
                 <div class="quishing-card">
                     <div class="quishing-icon">🛒</div>
-                    <div class="quishing-where" id="qc6where">USA &mdash; dokumentovaný případ</div>
+                    <div class="quishing-where" id="qc6where">USA &ndash; dokumentovaný případ</div>
                     <div class="quishing-title" id="qc6title">200 prodejen, $2,3M škoda za 48 hodin</div>
                     <p class="quishing-text" id="qc6text">
                         Podvodníci nahradili legitimní QR kódy falešnými ve více než 200 prodejnách
                         jednoho obchodníka. Během 48 hodin stál damage control firmu 2,3 milionu dolarů
-                        &mdash; ještě než přepočítali ztráty zákazníků a škody na reputaci.
+                        &ndash; ještě než přepočítali ztráty zákazníků a škody na reputaci.
                     </p>
-                    <a id="qc6source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.hbs.net/blog/quishing" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: HBS.net — Quishing report</a>
+                    <a id="qc6source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.hbs.net/blog/quishing" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: HBS.net &ndash; Quishing report</a>
                     <div class="quishing-lesson" id="qc6lesson">
                         <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc6lessonText">Podvod nepoškozuje jen oběti — i legitimní provozovatel nese reputační a finanční škodu.</span>
+                        <span id="qc6lessonText">Podvod nepoškozuje jen oběti &ndash; i legitimní provozovatel nese reputační a finanční škodu.</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Nabíječky EV — Evropa -->
+            <!-- Nabíječky EV &ndash; Evropa -->
             <div class="col-md-6 col-lg-4">
                 <div class="quishing-card">
                     <div class="quishing-icon">⚡</div>
-                    <div class="quishing-where" id="qc7where">Evropa (Berlín, UK) &mdash; 2024/2025</div>
+                    <div class="quishing-where" id="qc7where">Evropa (Berlín, UK) &ndash; 2024/2025</div>
                     <div class="quishing-title" id="qc7title">Falešné QR kódy na nabíječkách elektromobilů</div>
                     <p class="quishing-text" id="qc7text">
                         Podvodníci začali lepit falešné QR kódy na nabíjecí stojany pro elektromobily
                         po celé Evropě. Řidič naskenuje kód, zadá platební údaje na podvodné stránce
-                        imitující rozhraní operátora &mdash; a nabíjení se nespustí. Ubitricity potvrdil
+                        imitující rozhraní operátora &ndash; a nabíjení se nespustí. Ubitricity potvrdil
                         pokusy na méně než 30 místech v Berlíně. Preventivně reaguje i český ČEZ.
                     </p>
                     <a id="qc7source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.chip.cz/bezpecnost/kdo-dobiji-je-okraden-quishing-ohrozuje-uz-i-svet-elektromobility-siri-se-po-evrope-vite" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: CHIP.cz / Aktuálně.cz</a>
                     <div class="quishing-lesson" id="qc7lesson">
                         <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc7lessonText">Nabíječky s QR kódem na displeji (ne samolepce) jsou bezpečnější — samolepku lze přelepit, displej ne.</span>
+                        <span id="qc7lessonText">Nabíječky s QR kódem na displeji (ne samolepce) jsou bezpečnější &ndash; samolepku lze přelepit, displej ne.</span>
                     </div>
                 </div>
             </div>
@@ -372,7 +372,7 @@
 				Informace o zařízení
 			</h3>
 			<p class="fp-desc">
-				Technické parametry vašeho zařízení, které pomáhají webům optimalizovat obsah —
+				Technické parametry vašeho zařízení, které pomáhají webům optimalizovat obsah &ndash;
 				ale také mohou sloužit k identifikaci konkrétního zařízení.
 			</p>
 			<ul id="fp-device" class="fp-body"></ul>
