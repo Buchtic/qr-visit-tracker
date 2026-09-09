@@ -26,7 +26,6 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="vendor/js/chartjs-chart-geo.min.js"></script>
 <meta name="build" content="20260909-01">
 
 <link rel="stylesheet" href="styles.css">
@@ -36,10 +35,6 @@
 (function() {
     var b = document.head.querySelector('meta[name="build"]').content;
     document.head.querySelector('link[href="styles.css"]').href = "styles.css?v=" + b;
-
-    var c = document.createElement("script");
-    c.src = "charts.js?v=" + b;
-    document.head.appendChild(c);
 })();
 </script>
 
@@ -617,9 +612,11 @@ function openFaqPreview(e) {
 
 </div>
 
+<script src="vendor/js/chartjs-chart-geo.min.js"></script>
 <script>
-    var b = document.head.querySelector('meta[name="build"]').content;
-    document.write('<script src="script.js?v=' + b + '"><\/script>');
+var b = document.head.querySelector('meta[name="build"]').content;
+document.write('<script src="charts.js?v=' + b + '"><\/script>');
+document.write('<script src="script.js?v=' + b + '"><\/script>');
 </script>
 </body>
 </html>
