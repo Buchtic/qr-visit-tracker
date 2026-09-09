@@ -155,5 +155,11 @@
   "qc4source": "Source: Austin Transportation Dept.",
   "qc5source": "Source: Avast Blog / Czech Police",
   "qc6source": "Source: HBS.net — Quishing report",
-  "qc7source": "Source: CHIP.cz / Aktuálně.cz"
+  "qc7source": "Source: CHIP.cz / Aktuálně.cz",
+  "qc8where": "Restaurants — global trend",
+  "qc8title": "QR codes at the table: convenience and opportunity for scammers",
+  "qc8text": "Payment QR codes on restaurant tables have become the norm. The FBI issued a warning: a sticker on a table can be covered with a fake one leading to a fraudulent payment page. The customer thinks they're paying the bill — they're actually sending money to scammers. Replacing a sticker takes seconds.",
+  "qc8lessonText": "An engraved or laminated QR code on a table is safer than a sticker — stickers are easy to cover, engravings are not.",
+  "qc8source": "Source: CHIP.cz / FBI",
+  "githubText": "This project is open-source. "
 }
