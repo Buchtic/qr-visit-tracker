@@ -29,7 +29,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4.3.0/build/index.umd.min.js"></script>
 <meta name="build" content="20260909-01">
 
-<script src="charts.js"></script>
 <link rel="stylesheet" href="styles.css">
 
 <!-- Cache busting — změňte content v meta[name="build"] po každém deployi -->
@@ -37,7 +36,17 @@
 (function() {
     var b = document.head.querySelector('meta[name="build"]').content;
     document.head.querySelector('link[href="styles.css"]').href = "styles.css?v=" + b;
-    document.head.querySelector('script[src="charts.js"]').src  = "charts.js?v="  + b;
+
+    // charts.js musí být před script.js — defer zachovává pořadí
+    var c = document.createElement("script");
+    c.src = "charts.js?v=" + b;
+    c.defer = true;
+    document.head.appendChild(c);
+
+    var s = document.createElement("script");
+    s.src = "script.js?v=" + b;
+    s.defer = true;
+    document.head.appendChild(s);
 })();
 </script>
 
@@ -611,13 +620,5 @@ function openFaqPreview(e) {
 
 </div>
 
-<script>
-(function() {
-    var b = document.head.querySelector('meta[name="build"]').content;
-    var s = document.createElement("script");
-    s.src = "script.js?v=" + b;
-    document.body.appendChild(s);
-})();
-</script>
 </body>
 </html>
