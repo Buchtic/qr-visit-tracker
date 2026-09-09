@@ -66,11 +66,11 @@ function applyTexts() {
     set("heatmapTitle",      t("heatmapTitle"));
     set("nocookiesTitle",    t("nocookiesTitle"));
     set("nocookiesText1",    t("nocookiesText1"));
-    set("nocookiesText2",    t("nocookiesText2"));
+    set("nocookiesText2",    t("nocookiesText2"), true);
     set("motivationTitle",   t("motivationTitle"));
     set("motivationText",    t("motivationText"));
     set("contactTitle",      t("contactTitle"));
-    set("contactText",       t("contactText"));
+    set("contactText",       t("contactText"), true);
     set("trainingTitle",     t("trainingTitle"));
     set("trainingText",      t("trainingText"), true);
     set("deviceChartTitle",  t("deviceChartTitle"));
@@ -87,6 +87,57 @@ function applyTexts() {
 
     document.documentElement.lang = LANG;
     document.title = t("title");
+
+    // fp sekce — nadpisy a popisky dlažlic
+    const fpSections = [
+        { title: "fp.section.general.title",     desc: "fp.section.general.desc",     titleId: null, descClass: null, titleSel: '#fp-general', descSel: null },
+    ];
+    // Přímé selektory podle pořadí h3.fp-title a p.fp-desc
+    const fpTitles = document.querySelectorAll(".fp-section .fp-title");
+    const fpDescs  = document.querySelectorAll(".fp-section .fp-desc");
+    const fpSectionKeys = [
+        ["fp.section.general.title",     "fp.section.general.desc"],
+        ["fp.section.device.title",      "fp.section.device.desc"],
+        ["fp.section.display.title",     "fp.section.display.desc"],
+        ["fp.section.gpu.title",         "fp.section.gpu.desc"],
+        ["fp.section.network.title",     "fp.section.network.desc"],
+        ["fp.section.fingerprint.title", "fp.section.fingerprint.desc"],
+    ];
+    fpTitles.forEach((el, i) => {
+        if (fpSectionKeys[i] && t(fpSectionKeys[i][0]) !== fpSectionKeys[i][0]) {
+            // Zachovat ikonu (<i>), nahradit jen text node za ní
+            const icon = el.querySelector("i");
+            el.textContent = t(fpSectionKeys[i][0]);
+            if (icon) el.prepend(icon);
+        }
+    });
+    fpDescs.forEach((el, i) => {
+        if (fpSectionKeys[i] && t(fpSectionKeys[i][1]) !== fpSectionKeys[i][1]) {
+            el.textContent = t(fpSectionKeys[i][1]);
+        }
+    });
+
+    // label.mobile / label.desktop v počítadlech
+    document.querySelectorAll(".bi-phone").forEach(el => {
+        if (el.nextSibling) el.nextSibling.textContent = " " + t("label.mobile");
+    });
+    document.querySelectorAll(".bi-display").forEach(el => {
+        if (el.nextSibling) el.nextSibling.textContent = " " + t("label.desktop");
+    });
+
+    // geoTitle — má <small> uvnitř, přepíšeme jen text node
+    const geoTitleEl = document.getElementById("geoTitle");
+    if (geoTitleEl) {
+        const small = geoTitleEl.querySelector("small");
+        geoTitleEl.textContent = t("geoTitle") + " ";
+        if (small) {
+            small.textContent = t("geoTitleSuffix");
+            geoTitleEl.appendChild(small);
+        }
+    }
+
+    // geoNote
+    set("geoNote", t("geoNote"));
 
     // FAQ — nadpisy i těla
     const faqKeys = ["faq.q1","faq.q2","faq.q3","faq.q4","faq.q5","faq.q6","faq.q7","faq.q8"];
