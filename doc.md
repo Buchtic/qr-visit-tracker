@@ -20,6 +20,25 @@ Po naskenování QR kódu stránka:
 
 ---
 
+## Edukační obsah
+
+Stránka obsahuje tyto edukační sekce:
+
+- **Co o sobě prozrazuješ** — fingerprint, User Agent, GPU, síť, geodata z IP
+- **Quishing — reálné případy** — 8 zdokumentovaných případů z praxe:
+  - Praha 2024: falešné EasyPark samolepky na parkovacích automatech
+  - UK 2024/2025: 800 hlášení, £3,5M ukradeno za rok (Action Fraud)
+  - Thornaby UK: £13 000 ukradeno na nádraží
+  - Texas 2021: 100+ přelepených parkovacích automatů
+  - Česko 2021: falešná sbírka po tornádu na jihu Moravy
+  - USA: 200 prodejen, $2,3M škoda za 48 hodin
+  - Evropa 2024/2025: QR podvody na nabíječkách elektromobilů
+  - Restaurace: FBI varování k QR kódům na stolech
+- **FAQ** — 9 otázek včetně "Co je quishing?"
+- **Jak se bránit** — náhled zkrácených URL, iOS vs Android, VPN
+
+---
+
 ## Architektura
 
 ```
@@ -28,9 +47,17 @@ neskenuj.me/
 ├── script.js               # Frontend logika (fingerprint, detekce, i18n, grafy)
 ├── charts.js               # Sdílené grafové funkce (Chart.js)
 ├── styles.css              # Styly (dark/light mode)
+├── _headers                # Cloudflare Pages HTTP hlavičky (CSP, security)
 ├── locales/
-│   ├── cs.json             # České texty
+│   ├── cs.json             # České texty (UI, FAQ, bannery, fp klíče)
 │   └── en.json             # Anglické texty
+├── vendor/
+│   ├── css/
+│   │   ├── bootstrap-icons.min.css
+│   │   └── fonts/          # woff, woff2
+│   ├── js/
+│   │   └── chartjs-chart-geo.min.js
+│   └── countries-110m.json # TopoJSON mapa světa
 ├── admin/
 │   └── index.html          # Admin dashboard (chráněno CF Access)
 ├── kampan/
@@ -342,13 +369,17 @@ ka-f.webawesome.com/webawesome@3.12.0/webawesome.loader.js
 
 ### Lokální vendor (`/vendor/`)
 
-Knihovny které nejsou na cdnjs nebo mají specifické požadavky (fonty):
+Knihovny které nejsou na cdnjs nebo mají specifické požadavky:
 
 | Soubor | Popis |
 |---|---|
 | `vendor/css/bootstrap-icons.min.css` | Bootstrap Icons 1.11.1 |
 | `vendor/css/fonts/bootstrap-icons.woff2` | Bootstrap Icons font |
+| `vendor/css/fonts/bootstrap-icons.woff` | Bootstrap Icons font (fallback) |
 | `vendor/js/chartjs-chart-geo.min.js` | Chart.js geo plugin 4.3.0 |
+| `vendor/countries-110m.json` | TopoJSON mapa světa (world-atlas 2.x, 108 KB) |
+
+Vendor soubory mají `Cache-Control: immutable` — prohlížeč je cachuje agresivně bez revalidace.
 
 ### Proč tento přístup
 
@@ -361,17 +392,19 @@ Knihovny které nejsou na cdnjs nebo mají specifické požadavky (fonty):
 
 ## Bezpečnostní hlavičky
 
-Soubor `_headers` v kořeni repozitáře nastavuje HTTP hlavičky přes Cloudflare Pages:
+Soubor `_headers` v kořeni repozitáře nastavuje HTTP hlavičky přes Cloudflare Pages automaticky při každém deployi:
 
 ```
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(), microphone=(), camera=()
-Content-Security-Policy: (viz _headers)
+Content-Security-Policy: (viz níže)
 ```
 
-CSP povoluje scripty a styly pouze z `'self'` a `cdnjs.cloudflare.com`. Admin část navíc povoluje `ka-f.webawesome.com`.
+CSP povoluje scripty a styly z `'self'` a `cdnjs.cloudflare.com`. Admin část navíc povoluje `ka-f.webawesome.com`. Vendor soubory mají `Cache-Control: immutable`.
+
+Úplný security audit vůči OWASP Top 10 (2021) je v souboru [SECURITY.md](./SECURITY.md).
 
 ---
 
