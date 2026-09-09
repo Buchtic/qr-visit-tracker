@@ -148,5 +148,12 @@
   "qc7where": "Europe (Berlin, UK) — 2024/2025",
   "qc7title": "Fake QR codes on EV charging stations",
   "qc7text": "Scammers have started placing fake QR codes on EV charging points across Europe. A driver scans the code, enters card details on a fake page imitating the operator's interface — and charging never starts. Ubitricity confirmed attempts at fewer than 30 locations in Berlin. Czech ČEZ has also issued preventive warnings.",
-  "qc7lessonText": "Charging stations with QR codes on a screen (not a sticker) are safer — a sticker can be covered, a screen cannot."
+  "qc7lessonText": "Charging stations with QR codes on a screen (not a sticker) are safer — a sticker can be covered, a screen cannot.",
+  "qc1source": "Source: Radiožurnál / iROZHLAS",
+  "qc2source": "Source: The Bureau of Investigative Journalism",
+  "qc3source": "Source: Friends Against Scams UK",
+  "qc4source": "Source: Austin Transportation Dept.",
+  "qc5source": "Source: Avast Blog / Czech Police",
+  "qc6source": "Source: HBS.net — Quishing report",
+  "qc7source": "Source: CHIP.cz / Aktuálně.cz"
 }
