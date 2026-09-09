@@ -13,7 +13,7 @@
     "It can trigger a download of harmful files.",
     "It can trick you into logging into a fake service.",
     "It can be placed over a legitimate QR code.",
-    "<span class=\"danger\">You cannot know where it leads until it's too late.</span>"
+    "<span class=\"danger\">You cannot know where it leads until it's too late</span> – <a href=\"#faq-preview\" onclick=\"openFaqPreview(event)\" style=\"color:#f85149;font-size:0.9em;\">at least not on Android</a>."
   ],
   "chartTitle": "Visits over time",
   "heatmapTitle": "Visit heatmap",
