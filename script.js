@@ -19,12 +19,17 @@ document.getElementById("themeToggle").addEventListener("click", () => {
 // ---------------------------
 // i18n — načtení lokalizace
 // ---------------------------
-const LANG = location.hostname.includes("scanresponsibly.it") ? "en" : "cs";
+
+// Výchozí jazyk: scanresponsibly.it = en, jinak cs
+// Přepínač přidá ?lang= do URL — žádné storage
+const HOSTNAME_LANG = location.hostname.includes("scanresponsibly.it") ? "en" : "cs";
+const LANG = new URLSearchParams(location.search).get("lang") || HOSTNAME_LANG;
 let _t = {};
 
 async function loadLocale() {
     try {
-        const res = await fetch(`/locales/${LANG}.json`);
+        const build = document.head.querySelector('meta[name="build"]')?.content || '1';
+        const res = await fetch(`/locales/${LANG}.json?v=${build}`);
         _t = await res.json();
     } catch (e) {
         console.warn("i18n: nepodařilo se načíst lokalizaci", e);
@@ -35,6 +40,13 @@ async function loadLocale() {
 
 function t(key) { return _t[key] ?? key; }
 function tFp(key) { return t("fp." + key); }
+
+function toggleLang() {
+    const next = LANG === "cs" ? "en" : "cs";
+    const params = new URLSearchParams(location.search);
+    params.set("lang", next);
+    location.search = params.toString();
+}
 
 function applyTexts() {
     const set = (id, val, html = false) => {
@@ -82,9 +94,16 @@ function applyTexts() {
         if (faqKeys[i] && t(faqKeys[i]) !== faqKeys[i]) btn.textContent = t(faqKeys[i]);
     });
 
-    // Vlaječka v topbaru
+    // Vlaječka v topbaru — kliknutím přepne jazyk
     const flagEl = document.getElementById("langFlag");
-    if (flagEl) flagEl.textContent = t("lang.flag");
+    if (flagEl) {
+        flagEl.textContent = t("lang.flag");
+        // Tooltip: zobrazit druhý jazyk jako nápovědu
+        const otherLang = LANG === "cs" ? "🇬🇧 English" : "🇨🇿 Čeština";
+        flagEl.title = otherLang;
+        flagEl.style.cursor = "pointer";
+        flagEl.onclick = toggleLang;
+    }
 }
 
 // ---------------------------
