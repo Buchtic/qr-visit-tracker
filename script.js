@@ -88,10 +88,14 @@ function applyTexts() {
     document.documentElement.lang = LANG;
     document.title = t("title");
 
-    // FAQ otázky — jen nadpisy tlačítek (odpovědi zůstávají v HTML)
+    // FAQ — nadpisy i těla
     const faqKeys = ["faq.q1","faq.q2","faq.q3","faq.q4","faq.q5","faq.q6","faq.q7","faq.q8"];
+    const faqBodyKeys = ["faq.a1","faq.a2","faq.a3","faq.a4","faq.a5","faq.a6","faq.a7","faq.a8"];
     document.querySelectorAll("#faqAccordion .accordion-button").forEach((btn, i) => {
         if (faqKeys[i] && t(faqKeys[i]) !== faqKeys[i]) btn.textContent = t(faqKeys[i]);
+    });
+    document.querySelectorAll("#faqAccordion .accordion-body").forEach((body, i) => {
+        if (faqBodyKeys[i] && t(faqBodyKeys[i]) !== faqBodyKeys[i]) body.innerHTML = t(faqBodyKeys[i]);
     });
 
     // Vlaječka v topbaru — kliknutím přepne jazyk
