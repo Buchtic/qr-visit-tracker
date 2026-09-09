@@ -257,7 +257,7 @@ async function renderWorldMap(countryBreakdown, canvasId = "worldMap") {
 
     let countries;
     try {
-        const res = await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+        const res = await fetch("/vendor/countries-110m.json");
         const topology = await res.json();
         countries = ChartGeo.topojson.feature(topology, topology.objects.countries).features;
     } catch { canvas.style.display = "none"; return; }
