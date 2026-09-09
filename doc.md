@@ -317,6 +317,64 @@ Admin endpointy: CORS hlavičku záměrně neposílají.
 
 ---
 
+## Závislosti a CDN strategie
+
+Projekt používá **hybridní přístup** — hlavní knihovny z Cloudflare CDN, menší/méně běžné lokálně.
+
+### Cloudflare CDN (cdnjs.cloudflare.com)
+
+Stejná infrastruktura jako hosting — žádná závislost na cizí třetí straně:
+
+| Knihovna | Verze | URL |
+|---|---|---|
+| Bootstrap CSS | 5.3.2 | `cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css` |
+| Bootstrap JS | 5.3.2 | `cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js` |
+| Chart.js | 4.4.1 | `cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js` |
+
+### Web Awesome Free CDN (ka-f.webawesome.com)
+
+Pouze v `admin/index.html` (WA varianta):
+
+```
+ka-f.webawesome.com/webawesome@3.12.0/styles/themes/default.css
+ka-f.webawesome.com/webawesome@3.12.0/webawesome.loader.js
+```
+
+### Lokální vendor (`/vendor/`)
+
+Knihovny které nejsou na cdnjs nebo mají specifické požadavky (fonty):
+
+| Soubor | Popis |
+|---|---|
+| `vendor/css/bootstrap-icons.min.css` | Bootstrap Icons 1.11.1 |
+| `vendor/css/fonts/bootstrap-icons.woff2` | Bootstrap Icons font |
+| `vendor/js/chartjs-chart-geo.min.js` | Chart.js geo plugin 4.3.0 |
+
+### Proč tento přístup
+
+- **cdnjs.cloudflare.com** je provozován Cloudflare — stejný provider jako hosting, žádný cizí origin
+- Lokální soubory jsou v repozitáři — při aktualizaci stačí nahradit soubor, ne měnit URL v HTML
+- Vendor soubory mají `Cache-Control: immutable` (přes `_headers`) — prohlížeč je cachuje agresivně
+- Žádné SRI hashe nejsou potřeba pro cdnjs (Cloudflare kontroluje integritu), pro vendor ani
+
+---
+
+## Bezpečnostní hlavičky
+
+Soubor `_headers` v kořeni repozitáře nastavuje HTTP hlavičky přes Cloudflare Pages:
+
+```
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: geolocation=(), microphone=(), camera=()
+Content-Security-Policy: (viz _headers)
+```
+
+CSP povoluje scripty a styly pouze z `'self'` a `cdnjs.cloudflare.com`. Admin část navíc povoluje `ka-f.webawesome.com`.
+
+---
+
 ## Licence
 
 Creative Commons BY 4.0
