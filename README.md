@@ -1,35 +1,382 @@
-# qr-visit-tracker
-Tenhle projekt vznikl z jednoduché potřeby (aneb napadlo nás to U Kruhu u 🍺):
-- zjistit, kolik lidí skutečně otevře stránku přes QR kód – a ideálně to udělat bez Google Analytics, bez cookies, bez složitostí a bez backend serveru.
+# QR Visit Tracker
 
-Cílem bylo vytvořit něco, co:
-- je rychlé,
-- je bezpečné,
-- nevyžaduje žádnou databázi,
-- dá se nasadit během pár minut,
-- bude mít edukační dosah,
-- a přesto poskytuje užitečné statistiky.
+**Serverless návštěvnostní tracker pro QR kódové kampaně.** Bez cookies, bez Google Analytics, bez externích trackerů. Běží na Cloudflare Pages + KV Storage.
 
-Výsledkem je QR Visit Tracker - malý, čistý a serverless projekt postavený na Cloudflare Pages.
-Frontend je obyčejná statická stránka, která po načtení:
-- vytvoří jednoduchý fingerprint návštěvníka,
-- zjistí, jestli je na mobilu nebo desktopu,
-- pošle to na API endpoint,
-- a zobrazí aktuální počítadlo návštěv.
+Živé ukázky:
+- 🇨🇿 [neskenuj.me](https://neskenuj.me)
+- 🇬🇧 [scanresponsibly.it](https://scanresponsibly.it)
 
-Backend běží jako Pages Functions, což znamená, že žádný server neudržuješ – Cloudflare spustí funkci jen ve chvíli, kdy přijde požadavek.
-Data se ukládají do KV Storage, což je extrémně rychlé key‑value úložiště, ideální pro malé projekty a jednoduché statistiky.
+---
 
-Díky tomu projekt:
-- nevyužívá cookies,
-- nesleduje uživatele napříč weby,
-- neobsahuje žádné externí trackery,
-- a přesto poskytuje přehled o tom, kolik lidí QR kód skutečně použilo.
+## Co to dělá
 
-Je to takový „mini‑analytics“ nástroj, který si můžeš vzít kamkoliv — na plakát, leták, vizitku, event, prezentaci nebo produkt.
-A protože je to celé open‑source a bez vendor lock‑inu, můžeš si to upravit přesně podle sebe.
+Po naskenování QR kódu stránka:
 
-Živá ukázka:
-- https://neskenuj.me/
-- https://scanresponsibly.it/
+1. Vytvoří **fingerprint** zařízení z technických parametrů prohlížeče (SHA-256 hash)
+2. Zaznamená návštěvu do KV s typem zařízení, OS, zemí, ISP a ASN
+3. Zobrazí návštěvníkovi co o sobě prozradil — město, ISP, typ zařízení, fingerprint
+4. Detekuje zda jde o vracejícího se návštěvníka (bez cookies, jen přes fingerprint TTL)
+5. Zaznamenává statistiky per kampaň pokud přišel přes UTM parametr
 
+---
+
+## Architektura
+
+```
+neskenuj.me/
+├── index.html              # Hlavní edukační stránka (CS + EN)
+├── script.js               # Frontend logika (fingerprint, detekce, i18n, grafy)
+├── charts.js               # Sdílené grafové funkce (Chart.js)
+├── styles.css              # Styly (dark/light mode)
+├── locales/
+│   ├── cs.json             # České texty
+│   └── en.json             # Anglické texty
+├── admin/
+│   └── index.html          # Admin dashboard (chráněno CF Access)
+├── kampan/
+│   └── index.html          # Veřejné výsledky kampaně (/kampan/{slug})
+└── functions/
+    └── api/
+        ├── visit.js                    # POST /api/visit
+        ├── stats.js                    # GET  /api/stats
+        ├── campaigns/
+        │   └── [[slug]].js             # GET/POST /api/campaigns[/{slug}]
+        └── admin/
+            └── logs.js                 # GET  /api/admin/logs
+```
+
+---
+
+## Lokalizace (i18n)
+
+Projekt podporuje dvě jazykové mutace:
+
+| Doména | Výchozí jazyk |
+|---|---|
+| `neskenuj.me` | Čeština |
+| `scanresponsibly.it` | Angličtina |
+
+Jazyk se detekuje z hostname. Návštěvník ho může přepnout kliknutím na vlaječku 🇨🇿 / 🇬🇧 v pravém horním rohu — přepnutí se projeví přes URL parametr `?lang=en` nebo `?lang=cs`, bez cookies ani localStorage.
+
+Texty jsou v souborech `locales/cs.json` a `locales/en.json`. Přidání nového jazyka = nový JSON soubor + jedna podmínka v `script.js`.
+
+---
+
+## Cache busting
+
+Lokální soubory (CSS, JS, locales) se verzují přes query parametr řízeným jediným místem v `index.html`:
+
+```html
+<meta name="build" content="20260909-01">
+```
+
+Po každém deployi změňte tuto hodnotu — invaliduje cache CF Pages pro `styles.css`, `charts.js`, `script.js` i `locales/*.json`.
+
+---
+
+## KV Namespaces
+
+Projekt používá tři KV namespaces:
+
+| Binding | Účel |
+|---|---|
+| `VISIT_COUNTER` | Agregované čítače (total, dnes, device, OS, country, ASN, boti, QR skeny) |
+| `VISIT_LOGS` | Detailní logy návštěv (TTL 90 dní) |
+| `CAMPAIGNS` | Metadata a statistiky kampaní |
+
+### Schéma klíčů VISIT_COUNTER
+
+```
+total                           → celkový počet unikátních návštěvníků
+YYYY-MM-DD                      → návštěvníci za daný den
+fp:YYYY-MM-DD:{fingerprint}     → TTL 48h, pro deduplikaci a isReturning detekci
+device-{mobile|desktop}-total   → breakdown dle zařízení
+device-{mobile|desktop}-YYYY-MM-DD
+os-{android|ios|windows|mac|linux}-total
+country-{mobile|desktop}-{CC}   → ISO 3166-1 alpha-2
+asn-{číslo}                     → počet návštěv per ASN
+asn-org-{číslo}                 → název organizace pro dané ASN
+bot-total                       → detekované boty + datacenterové přístupy celkem
+bot-YYYY-MM-DD
+scan-total                      → pravděpodobné QR skeny celkem (mobile + přímý přístup)
+scan-YYYY-MM-DD
+```
+
+### Schéma klíčů VISIT_LOGS
+
+Každý záznam: `visit:{timestamp}:{fp8znaků}` → JSON s TTL 90 dní
+
+```json
+{
+  "fingerprint": "hex64",
+  "deviceType": "mobile|desktop|unknown",
+  "os": "android|ios|windows|mac|linux|unknown",
+  "isBot": false,
+  "country": "CZ",
+  "city": "Prague",
+  "region": "Prague",
+  "timezone": "Europe/Prague",
+  "asn": "5610",
+  "asOrg": "O2 Czech Republic",
+  "isEU": true,
+  "referrer": "https://...",
+  "likelyScan": true,
+  "utm_campaign": "abc12345",
+  "timestamp": 1234567890000
+}
+```
+
+### Schéma klíčů CAMPAIGNS
+
+```
+campaign:{slug}                     → { name, description, startDate, createdAt }
+campaign-hits:{slug}                → celkový počet skenování
+campaign-day:{slug}:YYYY-MM-DD      → skenování per den
+campaign-device:{slug}:{mobile|desktop}
+campaign-country:{slug}:{CC}
+```
+
+---
+
+## API Endpointy
+
+### Veřejné
+
+| Metoda | Endpoint | Popis |
+|---|---|---|
+| `POST` | `/api/visit` | Zaznamenat návštěvu |
+| `GET` | `/api/stats` | Agregované statistiky + grafy |
+| `GET` | `/api/campaigns/{slug}` | Veřejné výsledky kampaně |
+
+### Admin (vyžadují CF Access nebo X-Admin-Token hlavičku)
+
+| Metoda | Endpoint | Popis |
+|---|---|---|
+| `GET` | `/api/campaigns` | Seznam všech kampaní |
+| `POST` | `/api/campaigns` | Vytvořit novou kampaň |
+| `GET` | `/api/admin/logs` | Log návštěv s filtrováním |
+
+#### POST /api/visit
+
+```json
+{
+  "fingerprint": "sha256hex64znaků",
+  "deviceType": "mobile|desktop|unknown",
+  "os": "android|ios|windows|mac|linux|unknown",
+  "isBot": false,
+  "utm_campaign": "slug8znaků",
+  "referrer": "https://..."
+}
+```
+
+Response:
+```json
+{
+  "today": 42,
+  "total": 1234,
+  "isReturning": false,
+  "likelyScan": true,
+  "geo": { "country": "CZ", "city": "Prague", "region": "Prague", "asOrg": "O2 Czech Republic", "isEU": true }
+}
+```
+
+#### GET /api/stats parametry
+
+| Parametr | Hodnota | Popis |
+|---|---|---|
+| `device` | `mobile` (výchozí) / `all` | Filtr pro country breakdown |
+
+Response obsahuje: `today`, `total`, `stats` (30 dní), `deviceBreakdown`, `osBreakdown`, `countryRanking`, `botBreakdown`, `scanBreakdown`, `asnRanking` (top 20).
+
+#### GET /api/admin/logs parametry
+
+| Parametr | Popis |
+|---|---|
+| `from` | Datum od (YYYY-MM-DD) |
+| `to` | Datum do (YYYY-MM-DD) |
+| `limit` | Max záznamů (výchozí 50, max 200) |
+| `cursor` | Stránkování |
+| `device` | `mobile` / `desktop` |
+| `os` | `android` / `ios` / `windows` / `mac` / `linux` |
+| `bot` | `0` = bez botů, `1` = jen boti |
+| `scan` | `1` = jen pravděpodobné QR skeny |
+| `unique` | `1` = deduplikovat per fingerprint |
+
+---
+
+## Logika detekce
+
+### likelyScan — pravděpodobné QR skenování
+
+Návštěva se označí jako pravděpodobné QR skenování pokud:
+- `deviceType === "mobile"` AND
+- `!isBot` AND
+- `referrer` je prázdný (přímý přístup) nebo obsahuje `qr`/`scan`
+
+### Bot detekce (dvouvrstvá)
+
+**Frontend** (v prohlížeči): `navigator.webdriver`, podezřelá slova v UA, nulové HW hodnoty.
+
+**Backend** (server): ASN organizace odpovídá datacenterovému provozovateli (Cloudflare, AWS, Azure, Google, OVH, Hetzner, DigitalOcean, …).
+
+### isReturning — vracející se návštěvník
+
+Kontrola KV klíče `fp:{dnešní datum}:{fingerprint}` s TTL 48 hodin. Pokud existuje = vracející se návštěvník. Bez cookies, bez trackingu mezi dny.
+
+---
+
+## Nasazení
+
+### 1. Vytvořit KV namespaces
+
+V CF dashboardu → Workers & Pages → KV:
+
+```
+VISIT_COUNTER
+VISIT_LOGS
+CAMPAIGNS
+```
+
+### 2. Propojit repozitář
+
+Workers & Pages → Create → Pages → Connect to Git → vybrat repozitář.
+
+- Framework preset: **None**
+- Build command: *(prázdné)*
+- Output directory: `/`
+
+### 3. Nastavit KV bindings
+
+Pages → projekt → Settings → Bindings → přidat tři KV namespaces se správnými názvy.
+
+### 4. Nastavit CF Access pro /admin
+
+Zero Trust → Access → Applications → Add → Self-hosted:
+
+- Domain: `neskenuj.me`, Path: `admin`
+- Policy: Include → Emails → tvůj@email.com
+- Identity provider: One-time PIN nebo Google
+
+### 5. (Volitelně) Nastavit ADMIN_TOKEN secret
+
+Pages → Settings → Environment Variables → přidat `ADMIN_TOKEN` s náhodnou hodnotou.
+Záložní autentizace pro API bez CF Access session (např. pro lokální testování).
+
+---
+
+## Kampaně
+
+Každá kampaň má unikátní 8znakový alfanumerický slug (36^8 ≈ 2,8 bilionu kombinací).
+
+**Vytvořit kampaň:** Admin → sekce Kampaně → Nová kampaň
+
+**URL pro QR kód:** `neskenuj.me/?utm_campaign={slug}`
+
+Po naskenování se zobrazí hlavní edukační stránka s badge nahoře (název kampaně).
+
+**Veřejné výsledky:** `neskenuj.me/kampan/{slug}` — grafy, mapa, statistiky per kampaň.
+
+---
+
+## Bezpečnost
+
+### Co je chráněno
+
+- **Admin dashboard** — CF Access (Google OAuth nebo One-time PIN)
+- **POST /api/campaigns** — vyžaduje CF-Access-Jwt-Assertion nebo X-Admin-Token hlavičku
+- **GET /api/campaigns** (seznam) — stejná ochrana jako POST
+- **Fingerprint validace** — přijímá pouze hex string 64 znaků (`/^[a-f0-9]{64}$/`)
+- **Country validace** — pouze ISO 3166-1 alpha-2 (`/^[A-Z]{2}$/`)
+- **Slug validace** — pouze `/^[a-z0-9]{1,64}$/`
+- **HTML escaping** — name a description kampaní escapovány při výstupu z API
+- **XSS ochrana** — fingerprint data renderována přes `textContent`, ne `innerHTML`
+- **IP adresa** — záměrně nelogována; ukládají se pouze odvozená data (město, ISP)
+
+### Known limitations
+
+- **Rate limiting** — není implementován; doporučeno nastavit CF Rate Limiting pravidlo na `/api/visit`
+- **GET /api/campaigns/{slug}** — veřejné (záměrně, pro `/kampan/` stránku)
+- **GET /api/stats** — veřejné (záměrně, pro grafy na hlavní stránce)
+
+### CORS
+
+Veřejné endpointy: `Access-Control-Allow-Origin: *`.
+Admin endpointy: CORS hlavičku záměrně neposílají.
+
+---
+
+## Stack
+
+- **Hosting:** Cloudflare Pages (serverless)
+- **Backend:** Cloudflare Pages Functions (Workers runtime)
+- **Databáze:** Cloudflare KV Storage
+- **Frontend:** vanilla JS, Bootstrap 5, Chart.js, chartjs-chart-geo
+- **Autentizace:** Cloudflare Access (Zero Trust)
+- **Geodata:** Cloudflare `request.cf` (country, city, region, ASN, asOrganization, isEUCountry — bez externího API)
+- **i18n:** vlastní JSON-based systém (`locales/cs.json`, `locales/en.json`)
+
+---
+
+## Závislosti a CDN strategie
+
+Projekt používá **hybridní přístup** — hlavní knihovny z Cloudflare CDN, menší/méně běžné lokálně.
+
+### Cloudflare CDN (cdnjs.cloudflare.com)
+
+Stejná infrastruktura jako hosting — žádná závislost na cizí třetí straně:
+
+| Knihovna | Verze | URL |
+|---|---|---|
+| Bootstrap CSS | 5.3.2 | `cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css` |
+| Bootstrap JS | 5.3.2 | `cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js` |
+| Chart.js | 4.4.1 | `cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js` |
+
+### Web Awesome Free CDN (ka-f.webawesome.com)
+
+Pouze v `admin/index.html` (WA varianta):
+
+```
+ka-f.webawesome.com/webawesome@3.12.0/styles/themes/default.css
+ka-f.webawesome.com/webawesome@3.12.0/webawesome.loader.js
+```
+
+### Lokální vendor (`/vendor/`)
+
+Knihovny které nejsou na cdnjs nebo mají specifické požadavky (fonty):
+
+| Soubor | Popis |
+|---|---|
+| `vendor/css/bootstrap-icons.min.css` | Bootstrap Icons 1.11.1 |
+| `vendor/css/fonts/bootstrap-icons.woff2` | Bootstrap Icons font |
+| `vendor/js/chartjs-chart-geo.min.js` | Chart.js geo plugin 4.3.0 |
+
+### Proč tento přístup
+
+- **cdnjs.cloudflare.com** je provozován Cloudflare — stejný provider jako hosting, žádný cizí origin
+- Lokální soubory jsou v repozitáři — při aktualizaci stačí nahradit soubor, ne měnit URL v HTML
+- Vendor soubory mají `Cache-Control: immutable` (přes `_headers`) — prohlížeč je cachuje agresivně
+- Žádné SRI hashe nejsou potřeba pro cdnjs (Cloudflare kontroluje integritu), pro vendor ani
+
+---
+
+## Bezpečnostní hlavičky
+
+Soubor `_headers` v kořeni repozitáře nastavuje HTTP hlavičky přes Cloudflare Pages:
+
+```
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: geolocation=(), microphone=(), camera=()
+Content-Security-Policy: (viz _headers)
+```
+
+CSP povoluje scripty a styly pouze z `'self'` a `cdnjs.cloudflare.com`. Admin část navíc povoluje `ka-f.webawesome.com`.
+
+---
+
+## Licence
+
+Creative Commons BY 4.0
+
+© 2024–2026 neskenuj.me / scanresponsibly.it | Created by [Buchtič](https://buchtic.net)
