@@ -393,7 +393,14 @@ function translateKey(key) {
         "Město": "Město",
         "Region": "Region",
         "Poskytovatel (ISP)": "Poskytovatel (ISP)",
-        "EU návštěvník": "EU návštěvník"
+        "EU návštěvník": "EU návštěvník",
+        // Klíče co mapa dříve neměla
+        "JavaScript povolen": "JavaScript povolen",
+        "Podpora dotyku": "Dotykový displej",
+        "PDF prohlížeč povolen": "PDF prohlížeč povolen",
+        "Podpora WebGL": "Podpora WebGL",
+        "Pixel Ratio": "Hustota pixelů (DPR)",
+        "Color Depth": "Barevná hloubka (bit)"
     };
 
     return map[key] || key; // fallback = anglický klíč
