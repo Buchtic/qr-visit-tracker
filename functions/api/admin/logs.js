@@ -1,6 +1,18 @@
 export async function onRequestGet(context) {
     const { env, request } = context;
 
+    // Admin endpoint — vyžaduje CF Access cookie nebo X-Admin-Token
+    const cookie = request.headers.get("Cookie") || "";
+    const cfJwt  = request.headers.get("CF-Access-Jwt-Assertion");
+    const token  = request.headers.get("X-Admin-Token");
+    const isAdmin = cfJwt || cookie.includes("CF_Authorization=") || (env.ADMIN_TOKEN && token === env.ADMIN_TOKEN);
+    if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+
     const url = new URL(request.url);
     const dateFrom   = url.searchParams.get("from");    // YYYY-MM-DD
     const dateTo     = url.searchParams.get("to");      // YYYY-MM-DD
