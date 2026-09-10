@@ -26,7 +26,7 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<meta name="build" content="20260909-1501">
+<meta name="build" content="20260909-01">
 
 <link rel="stylesheet" href="styles.css">
 
@@ -43,15 +43,38 @@
 
 <div class="container">
 
-    <!-- Dark mode switch + jazyková vlaječka -->
-    <div class="text-end mb-3" style="display:flex;justify-content:flex-end;align-items:center;gap:8px;">
-        <span id="langFlag"
-              style="font-size:1.3rem;line-height:1;cursor:pointer;opacity:0.85;transition:opacity .2s;"
-              onmouseover="this.style.opacity='1'"
-              onmouseout="this.style.opacity='0.85'"
-              title="Language / Jazyk">🇨🇿</span>
-        <button id="themeToggle" class="btn btn-outline-light btn-sm">☼</button>
-    </div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-md navbar-dark mb-4" id="mainNav"
+         style="background:transparent;padding:12px 0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span id="langFlag"
+                  style="font-size:1.3rem;line-height:1;cursor:pointer;opacity:0.85;transition:opacity .2s;"
+                  onmouseover="this.style.opacity='1'"
+                  onmouseout="this.style.opacity='0.85'"
+                  title="Language / Jazyk">🇨🇿</span>
+            <button id="themeToggle" class="btn btn-outline-light btn-sm">☼</button>
+        </div>
+
+        <!-- Hamburger -->
+        <button class="navbar-toggler ms-auto" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navMenu"
+                aria-controls="navMenu" aria-expanded="false"
+                style="border-color:#30363d;">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Menu -->
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto gap-1" id="navLinks">
+                <li class="nav-item"><a class="nav-link" href="#rizika" id="nav-rizika">Rizika</a></li>
+                <li class="nav-item"><a class="nav-link" href="#quishing" id="nav-quishing">Případy</a></li>
+                <li class="nav-item"><a class="nav-link" href="#fingerprint" id="nav-fingerprint">Fingerprint</a></li>
+                <li class="nav-item"><a class="nav-link" href="#statistiky" id="nav-statistiky">Statistiky</a></li>
+                <li class="nav-item"><a class="nav-link" href="#faq" id="nav-faq">FAQ</a></li>
+                <li class="nav-item"><a class="nav-link" href="#projekt" id="nav-projekt">O projektu</a></li>
+            </ul>
+        </div>
+    </nav>
 	<h1 id="title" class="text-center">Neskenuj náhodné QR kódy</h1>
 
     <!-- Campaign badge — zobrazí se jen když přijdeš přes utm_campaign -->
@@ -176,7 +199,7 @@
 </div><!-- /.col-md-6 druhý box -->
 </div><!-- /.row -->
 
-    <div class="panel">
+    <div class="panel" id="rizika">
         <h2 id="whyTitle">Proč je skenování náhodných QR kódů rizikové</h2>
         <ul id="whyList">
             <li>QR kód může vést na podvodnou stránku nebo phishing.</li>
@@ -188,7 +211,7 @@
     </div>
 
     <!-- Quishing — reálné případy -->
-    <div class="panel" id="quishingPanel">
+    <div class="panel" id="quishing">
         <h2 id="quishingTitle">
             <span style="color:#f0883e;">⚠️</span>
             <span id="quishingTitleText">Quishing — kdy to doopravdy bolelo</span>
@@ -367,7 +390,7 @@
         </p>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="fingerprint">
         <h2 class="danger" id="revealTitle">Co o sobě právě prozrazuješ</h2>
         <p id="revealText1">
             Tohle jsou technické informace, které tvůj prohlížeč automaticky poslal,
@@ -459,7 +482,7 @@
 
 
 
-    <div class="panel">
+    <div class="panel" id="statistiky">
         <h2 id="chartTitle">Návštěvnost v čase</h2>
         <div id="visitsChartWrap">
             <div class="text-center py-4" id="visitsChartSpinner">
@@ -524,7 +547,7 @@
         </p>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="projekt">
         <h2 id="nocookiesTitle">Tento projekt je 100% bez cookies</h2>
         <p id="nocookiesText1">
             Tato stránka nepoužívá žádné cookies, žádné trackery, žádné analytické nástroje třetích stran.
@@ -562,7 +585,7 @@
     </div>
 
     <!-- FAQ -->
-    <div class="panel" id="faqPanel">
+    <div class="panel" id="faq">
         <h2 id="faqTitle">Časté otázky</h2>
 
         <div class="accordion" id="faqAccordion">

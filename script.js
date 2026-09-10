@@ -152,6 +152,13 @@ function applyTexts() {
     // GitHub odkaz
     set("githubText", t("githubText"));
 
+    // Navigace — překlady
+    const navKeys = ["rizika","quishing","fingerprint","statistiky","faq","projekt"];
+    navKeys.forEach(k => {
+        const el = document.getElementById(`nav-${k}`);
+        if (el && t(`nav.${k}`) !== `nav.${k}`) el.textContent = t(`nav.${k}`);
+    });
+
     // Vlaječka v topbaru — kliknutím přepne jazyk
     const flagEl = document.getElementById("langFlag");
     if (flagEl) {
