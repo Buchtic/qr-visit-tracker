@@ -61,7 +61,7 @@ neskenuj.me/
 ├── admin/
 │   └── index.html          # Admin dashboard (chráněno CF Access)
 ├── kampan/
-│   └── index.html          # Veřejné výsledky kampaně (/kampan/{slug})
+│   └── index.html          # Reportovací stránka kampaně (/kampan/?id={slug})
 └── functions/
     └── api/
         ├── visit.js                    # POST /api/visit
@@ -173,7 +173,7 @@ campaign-country:{slug}:{CC}
 |---|---|---|
 | `POST` | `/api/visit` | Zaznamenat návštěvu |
 | `GET` | `/api/stats` | Agregované statistiky + grafy |
-| `GET` | `/api/campaigns/{slug}` | Veřejné výsledky kampaně |
+| `GET` | `/api/campaigns/{slug}` | Statistiky kampaně (pro `/kampan/?id={slug}`) |
 
 ### Admin (vyžadují CF Access nebo X-Admin-Token hlavičku)
 
@@ -305,7 +305,9 @@ Každá kampaň má unikátní 8znakový alfanumerický slug (36^8 ≈ 2,8 bilio
 
 Po naskenování se zobrazí hlavní edukační stránka s badge nahoře (název kampaně).
 
-**Veřejné výsledky:** `neskenuj.me/kampan/{slug}` — grafy, mapa, statistiky per kampaň.
+**Reportovací stránka:** `neskenuj.me/kampan/?id={slug}` — graf skenování v čase, device split, top země. Vhodné sdílet zákazníkovi jako report výsledků.
+
+**Smazání kampaně:** Admin → tabulka kampaní → 🗑️ → inline potvrzení. Smaže metadata a statistiky kampaně, VISIT_LOGS a celkové čítače se nedotýká.
 
 ---
 

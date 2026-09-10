@@ -43,10 +43,11 @@ if (env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN) return true;
 | Endpoint | Přístup | Ochrana |
 |---|---|---|
 | `POST /api/visit` | Veřejný | — |
-| `GET /api/stats` | Veřejný | — |
-| `GET /api/campaigns/{slug}` | Veřejný | — |
+| `GET /api/stats` | Veřejný | — (data jsou agregovaná, ne osobní) |
+| `GET /api/campaigns/{slug}` | Veřejný | — (pro kampan stránku) |
 | `GET /api/campaigns` (seznam) | Admin | CF Access cookie / JWT / token |
 | `POST /api/campaigns` | Admin | CF Access cookie / JWT / token |
+| `DELETE /api/campaigns/{slug}` | Admin | CF Access cookie / JWT / token |
 | `GET /api/admin/logs` | Admin | CF Access cookie / JWT / token |
 
 - `frame-ancestors 'none'` v CSP zabraňuje clickjacking útokům
@@ -77,8 +78,10 @@ if (env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN) return true;
 - HTML escaping na API výstupu: `escapeHtml()` pro name/description kampaní
 - Log tabulka: `textContent` místo `innerHTML` pro uživatelská data
 - Kampaně tabulka v admin: DOM-based renderování přes `textContent`/`setAttribute`
+- Kampan stránka: country ranking renderován DOM-based (`textContent` pro `item.cc`)
 - Raw JSON v log detailu: `textContent`
 - Lokalizační JSON soubory jsou statické v repozitáři — nelze vzdáleně pozměnit
+- `GET /api/admin/logs` nyní vyžaduje auth (dříve chybělo)
 
 **Zbývající `innerHTML`:** bannery a FAQ těla používají `innerHTML` pro lokalizační texty z `locales/*.json`. Přijatelné — kompromitace vyžaduje write přístup do repozitáře.
 
