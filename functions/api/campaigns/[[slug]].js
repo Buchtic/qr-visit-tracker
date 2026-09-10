@@ -209,3 +209,68 @@ export async function onRequestOptions() {
         }
     });
 }
+
+export async function onRequestDelete(context) {
+    const { env, request } = context;
+
+    if (!isAdminRequest(request, env)) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+
+    const url = new URL(request.url);
+    const parts = url.pathname.replace(/\/+$/, "").split("/");
+    const slug = parts[parts.length - 1];
+
+    if (!slug || slug === "campaigns" || !/^[a-z0-9]{1,64}$/.test(slug)) {
+        return new Response(JSON.stringify({ error: "Invalid slug" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+
+    // Ověřit že kampaň existuje
+    const meta = await env.CAMPAIGNS.get(`campaign:${slug}`);
+    if (!meta) {
+        return new Response(JSON.stringify({ error: "Campaign not found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+
+    // Smazat metadata
+    await env.CAMPAIGNS.delete(`campaign:${slug}`);
+    await env.CAMPAIGNS.delete(`campaign-hits:${slug}`);
+
+    // Smazat denní statistiky (posledních 365 dní)
+    const now = new Date();
+    const delPromises = [];
+    for (let i = 0; i < 365; i++) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        delPromises.push(env.CAMPAIGNS.delete(`campaign-day:${slug}:${d.toISOString().slice(0, 10)}`));
+    }
+
+    // Smazat device breakdown
+    delPromises.push(env.CAMPAIGNS.delete(`campaign-device:${slug}:mobile`));
+    delPromises.push(env.CAMPAIGNS.delete(`campaign-device:${slug}:desktop`));
+
+    // Smazat country breakdown
+    let cursor;
+    do {
+        const list = await env.CAMPAIGNS.list({ prefix: `campaign-country:${slug}:`, cursor, limit: 1000 });
+        for (const item of list.keys) {
+            delPromises.push(env.CAMPAIGNS.delete(item.name));
+        }
+        cursor = list.list_complete ? null : list.cursor;
+    } while (cursor);
+
+    await Promise.all(delPromises);
+
+    return new Response(
+        JSON.stringify({ success: true, slug }),
+        { headers: { "Content-Type": "application/json" } }
+    );
+}
