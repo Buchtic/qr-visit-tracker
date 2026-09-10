@@ -1,0 +1,6 @@
+# Cloudflare Pages — URL rewrites
+# Dokumentace: https://developers.cloudflare.com/pages/platform/redirects/
+
+# Kampaňové URL — slug je část URL, ne složka
+# /kampan/abc12345 → kampan/index.html (rewrite, ne redirect)
+/kampan/:slug  /kampan/index.html  200
