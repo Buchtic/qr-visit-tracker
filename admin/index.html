@@ -268,8 +268,14 @@
         <!-- Quick filtry -->
         <div class="mb-3 d-flex flex-wrap gap-2" id="quickFilters">
             <span style="font-size:0.78rem;color:#8b949e;align-self:center;">Rychlé filtry:</span>
+            <button class="btn btn-sm btn-primary qf-btn" data-filter="bot=0" onclick="applyQuickFilter(this)">
+                <i class="bi bi-person-check"></i> Bez botů
+            </button>
             <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="" onclick="applyQuickFilter(this)">
                 Vše
+            </button>
+            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="scan=1" onclick="applyQuickFilter(this)">
+                <i class="bi bi-qr-code-scan"></i> Pravd. QR skeny
             </button>
             <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="device=mobile" onclick="applyQuickFilter(this)">
                 <i class="bi bi-phone"></i> Jen mobil
@@ -277,22 +283,11 @@
             <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="device=desktop" onclick="applyQuickFilter(this)">
                 <i class="bi bi-display"></i> Jen desktop
             </button>
-            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="bot=0" onclick="applyQuickFilter(this)">
-                <i class="bi bi-person-check"></i> Bez botů
-            </button>
-            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="bot=1" onclick="applyQuickFilter(this)">
+            <button class="btn btn-sm btn-outline-danger qf-btn" data-filter="bot=1" onclick="applyQuickFilter(this)">
                 <i class="bi bi-robot"></i> Jen boti
             </button>
-            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="scan=1" onclick="applyQuickFilter(this)">
-                <i class="bi bi-qr-code-scan"></i> Pravd. QR skeny
-            </button>
-            <button class="btn btn-sm btn-outline-secondary qf-btn" data-filter="unique=1" onclick="applyQuickFilter(this)">
-                <i class="bi bi-person"></i> Unikátní fingerprinty
-            </button>
             <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                    OS
-                </button>
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">OS</button>
                 <ul class="dropdown-menu dropdown-menu-dark">
                     <li><a class="dropdown-item qf-btn" data-filter="os=android" onclick="applyQuickFilter(this)" href="#">🤖 Android</a></li>
                     <li><a class="dropdown-item qf-btn" data-filter="os=ios"     onclick="applyQuickFilter(this)" href="#">🍎 iOS</a></li>
@@ -832,9 +827,17 @@ async function loadCampaigns() {
             btnCopy.innerHTML = '<i class="bi bi-clipboard"></i>';
             btnCopy.addEventListener("click", () => navigator.clipboard.writeText(visitUrl));
 
+            // Smazat kampaň — inline potvrzení
+            const btnDel = document.createElement("button");
+            btnDel.className = "btn btn-sm btn-outline-danger ms-1";
+            btnDel.setAttribute("title", "Smazat kampaň");
+            btnDel.innerHTML = '<i class="bi bi-trash3"></i>';
+            btnDel.addEventListener("click", () => confirmDelete(btnDel, c.slug, c.name, tr));
+
             tdActions.appendChild(btnChart);
             tdActions.appendChild(btnOpen);
             tdActions.appendChild(btnCopy);
+            tdActions.appendChild(btnDel);
 
             tr.appendChild(tdName);
             tr.appendChild(tdDate);
@@ -856,10 +859,66 @@ async function loadCampaigns() {
 // Inicializace
 // ----------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
+    // Výchozí filtr: posledních 30 dní, bez botů
+    const today = new Date();
+    const from30 = new Date(today);
+    from30.setDate(from30.getDate() - 30);
+    document.getElementById("filterFrom").value = from30.toISOString().slice(0, 10);
+    document.getElementById("filterTo").value   = today.toISOString().slice(0, 10);
+
+    // Aktivovat "Bez botů" jako výchozí filtr
+    activeQFilter = "bot=0";
+    const botBtn = document.querySelector('.qf-btn[data-filter="bot=0"]');
+    if (botBtn) {
+        botBtn.classList.remove("btn-outline-secondary");
+        botBtn.classList.add("btn-primary");
+    }
+
     loadStats();
     loadLogs(true);
     loadCampaigns();
 });
+
+// ----------------------------------------
+// Smazání kampaně — inline potvrzení
+// ----------------------------------------
+function confirmDelete(btn, slug, name, tr) {
+    if (tr.dataset.confirming) return;
+    tr.dataset.confirming = "1";
+
+    const tdActions = btn.closest("td");
+    tdActions.innerHTML = `
+        <span style="font-size:0.78rem;color:#f85149;margin-right:6px;">Smazat?</span>
+        <button class="btn btn-sm btn-danger me-1" id="confirmYes${slug}">Ano</button>
+        <button class="btn btn-sm btn-outline-secondary" id="confirmNo${slug}">Zpět</button>
+    `;
+
+    tdActions.querySelector(`#confirmNo${slug}`).addEventListener("click", () => {
+        delete tr.dataset.confirming;
+        loadCampaigns(); // Překreslí tabulku se správnými listenery
+    });
+
+    tdActions.querySelector(`#confirmYes${slug}`).addEventListener("click", async () => {
+        tdActions.innerHTML = '<span style="color:#8b949e;font-size:0.78rem;">Mažu&hellip;</span>';
+        try {
+            const res = await fetch(`../api/campaigns/${slug}`, {
+                method: "DELETE",
+                credentials: "include"
+            });
+            if (res.ok) {
+                tr.style.transition = "opacity .3s";
+                tr.style.opacity = "0";
+                setTimeout(() => tr.remove(), 300);
+            } else {
+                tdActions.innerHTML = '<span style="color:#f85149;font-size:0.78rem;">Chyba</span>';
+                delete tr.dataset.confirming;
+            }
+        } catch {
+            tdActions.innerHTML = '<span style="color:#f85149;font-size:0.78rem;">Chyba sítě</span>';
+            delete tr.dataset.confirming;
+        }
+    });
+}
 </script>
 <script>
 var b = document.head.querySelector('meta[name="build"]').content;
