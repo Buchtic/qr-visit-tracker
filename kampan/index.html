@@ -4,7 +4,7 @@
 <title>Report kampaně</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="build" content="20260910-1018">
+<meta name="build" content="20260910-01">
 <link rel="stylesheet" href="/vendor/css/bootstrap-icons.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
@@ -245,8 +245,14 @@ document.getElementById("themeToggle").addEventListener("click", () => {
 
 // Slug z URL
 function getSlug() {
+    // Podporuje obě varianty:
+    // /kampan/?id=jl2vk4oh  (nová, spolehlivá)
+    // /kampan/jl2vk4oh      (stará, přes pathname)
+    const param = new URLSearchParams(location.search).get("id");
+    if (param) return param;
     const parts = location.pathname.replace(/\/+$/, "").split("/");
-    return parts[parts.length - 1];
+    const last = parts[parts.length - 1];
+    return last === "kampan" ? "" : last;
 }
 
 // Formátovat datum
