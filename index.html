@@ -1,907 +1,352 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-<title>Neskenuj náhodné QR kódy</title>
+<title>Report kampaně</title>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-
-<!-- Téma bez záblesku — přečte localStorage před renderem -->
-<script>
-(function() {
-    var t = localStorage.getItem('theme');
-    if (t === 'dark' || t === 'light') {
-        document.documentElement.setAttribute('data-theme', t);
-        document.documentElement.className = t;
-    }
-})();
-</script>
-
-<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
-<link rel="stylesheet" href="vendor/css/bootstrap-icons.min.css"/>
-<link rel="icon" type="image/svg+xml" href="favicon.svg" />
-<link rel="shortcut icon" href="favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-<link rel="manifest" href="site.webmanifest" />
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="build" content="20260910-12550">
+<link rel="stylesheet" href="/vendor/css/bootstrap-icons.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<meta name="build" content="20260910-12410">
+<link rel="stylesheet" href="/styles.css">
 
-<link rel="stylesheet" href="styles.css">
-
-<!-- Cache busting — změňte content v meta[name="build"] po každém deployi -->
 <script>
 (function() {
     var b = document.head.querySelector('meta[name="build"]').content;
-    document.head.querySelector('link[href="styles.css"]').href = "styles.css?v=" + b;
+    document.head.querySelector('link[href="/styles.css"]').href = "/styles.css?v=" + b;
 })();
 </script>
 
+<style>
+    /* Layout */
+    .page-header {
+        padding: 20px 0 0;
+        margin-bottom: 24px;
+    }
+    .brand-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    .brand-logo {
+        font-size: 0.8rem;
+        color: #8b949e;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: color .2s;
+    }
+    .brand-logo:hover { color: #c9d1d9; }
+    .report-pill {
+        font-size: 0.7rem;
+        background: #21262d;
+        border: 1px solid #30363d;
+        border-radius: 20px;
+        padding: 3px 10px;
+        color: #8b949e;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .campaign-header {
+        border-left: 3px solid #58a6ff;
+        padding-left: 16px;
+        margin-bottom: 24px;
+    }
+    .campaign-header h1 {
+        font-size: 1.7rem;
+        margin: 0 0 4px;
+        line-height: 1.25;
+    }
+    .campaign-header .meta {
+        font-size: 0.8rem;
+        color: #8b949e;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+    .campaign-header .meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Metriky */
+    .metric { text-align: center; }
+    .metric .num { font-size: 2.8rem; font-weight: 700; line-height: 1.1; color: #58a6ff; }
+    .metric .lbl { font-size: 0.78rem; color: #8b949e; margin-top: 4px; }
+
+    /* Device bar */
+    .device-bar { height: 8px; border-radius: 4px; background: #21262d; margin: 8px 0 4px; overflow: hidden; display: flex; }
+    .device-bar-mob  { background: #3fb950; transition: width .6s ease; }
+    .device-bar-desk { background: #58a6ff; transition: width .6s ease; }
+
+    /* Stavy */
+    #errorState   { display: none; }
+    #loadingState { display: block; }
+    #mainContent  { display: none; }
+
+    /* Footer */
+    .page-footer {
+        text-align: center;
+        padding: 28px 0 20px;
+        font-size: 0.75rem;
+        color: #8b949e;
+        border-top: 1px solid #21262d;
+        margin-top: 32px;
+    }
+    .page-footer a { color: #58a6ff; text-decoration: none; }
+    .page-footer a:hover { text-decoration: underline; }
+</style>
 </head>
 <body class="dark">
+<div class="container" style="max-width:800px;">
 
-<div class="container">
-
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-md navbar-dark mb-4" id="mainNav"
-         style="background:transparent;padding:12px 0;">
+    <!-- Topbar -->
+    <div class="brand-line mt-3">
+        <a href="/" class="brand-logo">
+            <i class="bi bi-qr-code"></i>
+            neskenuj.me
+        </a>
         <div style="display:flex;align-items:center;gap:8px;">
-            <span id="langFlag"
-                  style="font-size:1.3rem;line-height:1;cursor:pointer;opacity:0.85;transition:opacity .2s;"
-                  onmouseover="this.style.opacity='1'"
-                  onmouseout="this.style.opacity='0.85'"
-                  title="Language / Jazyk">🇨🇿</span>
-            <button id="themeToggle" class="btn btn-outline-light btn-sm">☼</button>
-        </div>
-
-        <!-- Hamburger -->
-        <button class="navbar-toggler ms-auto" type="button"
-                data-bs-toggle="collapse" data-bs-target="#navMenu"
-                aria-controls="navMenu" aria-expanded="false"
-                style="border-color:#30363d;">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <!-- Menu -->
-        <div class="collapse navbar-collapse" id="navMenu">
-            <ul class="navbar-nav ms-auto gap-1" id="navLinks">
-                <li class="nav-item"><a class="nav-link" href="#rizika" id="nav-rizika">Rizika</a></li>
-                <li class="nav-item"><a class="nav-link" href="#quishing" id="nav-quishing">Případy</a></li>
-                <li class="nav-item"><a class="nav-link" href="#fingerprint" id="nav-fingerprint">Fingerprint</a></li>
-                <li class="nav-item"><a class="nav-link" href="#statistiky" id="nav-statistiky">Statistiky</a></li>
-                <li class="nav-item"><a class="nav-link" href="#faq" id="nav-faq">FAQ</a></li>
-                <li class="nav-item"><a class="nav-link" href="#projekt" id="nav-projekt">O projektu</a></li>
-            </ul>
-        </div>
-    </nav>
-	<h1 id="title" class="text-center">Neskenuj náhodné QR kódy</h1>
-
-    <!-- Campaign badge — zobrazí se jen když přijdeš přes utm_campaign -->
-    <div id="campaignBadge" style="display:none;" class="text-center mb-3">
-        <div style="
-            display:inline-block;
-            background:linear-gradient(135deg,#1c2a3a,#1a2332);
-            border:1px solid #30363d;
-            border-left:4px solid #58a6ff;
-            border-radius:8px;
-            padding:10px 18px;
-            max-width:600px;
-            text-align:left;
-        ">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <i class="bi bi-qr-code" style="color:#58a6ff;font-size:1.1rem;flex-shrink:0;"></i>
-                <div id="campaignBadgeContent">
-                    <div style="font-size:0.75rem;color:#8b949e;">Otevřel jsi tuto stránku přes kampaň</div>
-                    <div id="campaignBadgeName" style="font-weight:600;color:#c9d1d9;font-size:0.95rem;"></div>
-                    <div id="campaignBadgeDesc" style="font-size:0.78rem;color:#8b949e;margin-top:2px;display:none;"></div>
-                </div>
-                <!-- Místo pro logo kampaně v budoucnu -->
-                <div id="campaignLogo" style="margin-left:auto;display:none;">
-                    <img id="campaignLogoImg" src="" alt="" style="max-height:36px;max-width:100px;object-fit:contain;">
-                </div>
-            </div>
+            <span class="report-pill">
+                <i class="bi bi-bar-chart-line"></i>
+                Report kampaně
+            </span>
+            <button id="themeToggle" class="btn btn-outline-secondary btn-sm">☼</button>
         </div>
     </div>
-	
-<style>
-.device-progress { height:6px; border-radius:3px; background:#21262d; margin:6px 0 2px; overflow:hidden; }
-.device-progress-mobile  { height:100%; background:#3fb950; border-radius:3px; transition:width .6s ease; }
-.device-progress-desktop { height:100%; background:#58a6ff; border-radius:3px; transition:width .6s ease; }
-.pct-label { font-size:0.72rem; color:#8b949e; }
-.country-bar-wrap { background:#21262d; border-radius:3px; height:6px; flex:1; overflow:hidden; }
-.country-bar-fill { height:100%; background:#58a6ff; border-radius:3px; transition:width .5s ease; }
 
-/* Quishing kartičky */
-.quishing-card {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 10px;
-    padding: 18px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: border-color .2s;
-}
-.quishing-card:hover { border-color: #58a6ff; }
-.quishing-card--severe { border-left: 3px solid #f85149; }
-.quishing-icon { font-size: 1.8rem; line-height: 1; }
-.quishing-where { font-size: 0.72rem; color: #8b949e; text-transform: uppercase; letter-spacing: .04em; }
-.quishing-title { font-size: 0.95rem; font-weight: 600; color: #c9d1d9; line-height: 1.3; }
-.quishing-text { font-size: 0.82rem; color: #8b949e; margin: 0; flex: 1; line-height: 1.55; }
-.quishing-lesson {
-    display: flex;
-    gap: 6px;
-    background: #0d1117;
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 0.78rem;
-    color: #58a6ff;
-    margin-top: auto;
-}
-.quishing-lesson-icon { flex-shrink: 0; }
-</style>
-
-<div class="row g-3 mb-0">
-<div class="col-md-6">
-<div class="panel text-center" id="statsPanel">
-    <h2 id="todayLabel" style="margin-bottom:4px;">Unikátní návštěvníci dnes</h2>
-    <div class="count" id="counter" style="font-size:4rem;line-height:1.1;">…</div>
-
-    <div style="display:flex;justify-content:center;gap:32px;margin:14px 0 8px;">
-        <div style="min-width:80px;">
-            <div style="font-size:1.6rem;font-weight:700;" id="todayMobile">…</div>
-            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
-                <i class="bi bi-phone"></i> Mobil
-            </div>
-            <div class="device-progress"><div class="device-progress-mobile" id="todayMobileBar" style="width:0%"></div></div>
-            <div class="pct-label" id="todayMobilePct" style="display:none;"></div>
-        </div>
-        <div style="width:1px;background:#30363d;"></div>
-        <div style="min-width:80px;">
-            <div style="font-size:1.6rem;font-weight:700;" id="todayDesktop">…</div>
-            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
-                <i class="bi bi-display"></i> Desktop
-            </div>
-            <div class="device-progress"><div class="device-progress-desktop" id="todayDesktopBar" style="width:0%"></div></div>
-            <div class="pct-label" id="todayDesktopPct" style="display:none;"></div>
-        </div>
+    <!-- Loading -->
+    <div id="loadingState" class="text-center py-5">
+        <div class="spinner-border text-secondary" style="width:2rem;height:2rem;"></div>
+        <p class="mt-3" style="color:#8b949e;">Načítám data kampaně&hellip;</p>
     </div>
+
+    <!-- Chyba -->
+    <div id="errorState" class="panel text-center py-5">
+        <div style="font-size:3rem;">🔍</div>
+        <h2 class="mt-3">Kampaň nenalezena</h2>
+        <p style="color:#8b949e;">Tento odkaz není platný nebo kampaň byla odstraněna.</p>
+        <a href="/" class="btn btn-outline-light btn-sm mt-2">← Zpět na hlavní stránku</a>
+    </div>
+
+    <!-- Hlavní obsah -->
+    <div id="mainContent">
+
+        <!-- Hlavička kampaně -->
+        <div class="campaign-header">
+            <h1 id="campaignName"></h1>
+            <p id="campaignDesc" style="color:#8b949e;margin:0;font-size:0.9rem;"></p>
+            <div class="meta">
+                <span>
+                    <i class="bi bi-calendar3"></i>
+                    Spuštěno: <strong id="campaignStart" style="color:#c9d1d9;"></strong>
+                </span>
+                <span>
+                    <i class="bi bi-stopwatch"></i>
+                    <span id="campaignDays" style="color:#c9d1d9;"></span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Metriky -->
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-md-3">
+                <div class="panel metric">
+                    <div class="num" id="mTotal">–</div>
+                    <div class="lbl">Celkem skenování</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="panel metric">
+                    <div class="num" id="mToday">–</div>
+                    <div class="lbl">Dnes</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="panel metric">
+                    <div class="num" style="color:#3fb950;" id="mMobile">–</div>
+                    <div class="lbl">Mobilů</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="panel metric">
+                    <div class="num" style="color:#8b949e;" id="mDesktop">–</div>
+                    <div class="lbl">Desktopů</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device progress bar -->
+        <div class="panel mb-3">
+            <div class="d-flex justify-content-between" style="font-size:0.8rem;color:#8b949e;margin-bottom:4px;">
+                <span><i class="bi bi-phone" style="color:#3fb950;"></i> Mobil <span id="mobPct"></span></span>
+                <span><span id="deskPct"></span> Desktop <i class="bi bi-display" style="color:#58a6ff;"></i></span>
+            </div>
+            <div class="device-bar">
+                <div class="device-bar-mob"  id="mobBar"  style="width:0%"></div>
+                <div class="device-bar-desk" id="deskBar" style="width:0%"></div>
+            </div>
+        </div>
+
+        <!-- Graf návštěvnosti -->
+        <div class="panel mb-3">
+            <h2 style="font-size:1rem;">Skenování v čase</h2>
+            <canvas id="lineChart" height="100"></canvas>
+        </div>
+
+        <!-- Top země -->
+        <div class="panel mb-3" id="countryPanel" style="display:none;">
+            <h2 style="font-size:1rem;">Top země</h2>
+            <div id="countryList" style="font-size:0.85rem;"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="page-footer">
+            Report vygenerován přes
+            <a href="/" target="_blank">neskenuj.me</a>
+            &mdash; edukační QR tracker bez cookies
+        </div>
+
+    </div><!-- /mainContent -->
 </div>
-</div><!-- /.col-md-6 první box -->
 
-<div class="col-md-6">
-<div class="panel text-center" id="totalStatsPanel">
-    <h2 id="totalPanelLabel" style="margin-bottom:4px;">Unikátní návštěvníci celkem</h2>
-    <div class="count" id="totalCounter" style="font-size:4rem;line-height:1.1;">…</div>
-
-    <div style="display:flex;justify-content:center;gap:32px;margin:14px 0 8px;">
-        <div style="min-width:80px;">
-            <div style="font-size:1.6rem;font-weight:700;" id="totalMobile">…</div>
-            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
-                <i class="bi bi-phone"></i> Mobil
-            </div>
-            <div class="device-progress"><div class="device-progress-mobile" id="totalMobileBar" style="width:0%"></div></div>
-            <div class="pct-label" id="totalMobilePct" style="display:none;"></div>
-        </div>
-        <div style="width:1px;background:#30363d;"></div>
-        <div style="min-width:80px;">
-            <div style="font-size:1.6rem;font-weight:700;" id="totalDesktop">…</div>
-            <div style="font-size:0.8rem;color:#8b949e;margin-top:2px;">
-                <i class="bi bi-display"></i> Desktop
-            </div>
-            <div class="device-progress"><div class="device-progress-desktop" id="totalDesktopBar" style="width:0%"></div></div>
-            <div class="pct-label" id="totalDesktopPct" style="display:none;"></div>
-        </div>
-    </div>
-</div>
-</div><!-- /.col-md-6 druhý box -->
-</div><!-- /.row -->
-
-    <div class="panel" id="rizika">
-        <h2 id="whyTitle">Proč je skenování náhodných QR kódů rizikové</h2>
-        <ul id="whyList">
-            <li>QR kód může vést na podvodnou stránku nebo phishing.</li>
-            <li>Může spustit stažení škodlivého souboru.</li>
-            <li>Může tě přimět k přihlášení na falešnou službu / přihlášení cizí osoby k vašemu účtu.</li>
-            <li>Může být nalepený přes původní legitimní QR kód.</li>
-            <li><span class="danger">Nemáš šanci poznat, kam vede, dokud už není pozdě</span> &ndash; <a href="#faq-preview" onclick="openFaqPreview(event)" style="color:#f85149;font-size:0.9em;">přinejmenším ne na Androidu</a>.</li>
-        </ul>
-    </div>
-
-    <!-- Quishing — reálné případy -->
-    <div class="panel" id="quishing">
-        <h2 id="quishingTitle">
-            <span style="color:#f0883e;">⚠️</span>
-            <span id="quishingTitleText">Quishing — kdy to doopravdy bolelo</span>
-        </h2>
-        <p id="quishingIntro" style="color:#8b949e;margin-bottom:20px;">
-            Tohle nejsou hypotetické hrozby. Tady jsou zdokumentované případy
-            ze skutečného světa, kde přelepený nebo falešný QR kód připravil lidi o peníze.
-        </p>
-
-        <div class="row g-3" id="quishingCards">
-
-            <!-- Praha — EasyPark -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card">
-                    <div class="quishing-icon">🚗</div>
-                    <div class="quishing-where" id="qc1where">Praha, Česko &mdash; 2024</div>
-                    <div class="quishing-title" id="qc1title">Falešné EasyPark na parkovacích automatech</div>
-                    <p class="quishing-text" id="qc1text">
-                        Podvodníci přelepili parkovací automaty v centru Prahy růžovými samolepkami
-                        dokonale imitujícími EasyPark. Řidiči zaplatili podvodníkům místo městu
-                        &mdash; a navíc dostali pokutu za nezaplacené parkovné.
-                    </p>
-                    <a id="qc1source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://radiozurnal.rozhlas.cz/qr-kod-muze-prelepit-kazdy-jak-se-nenachytat-podvodniky-s-parkovanim-a-cim-jim-9337877" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Radiožurnál / iROZHLAS</a>
-                    <div class="quishing-lesson" id="qc1lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc1lessonText">Dvojitá rána: ztráta peněz + pokuta. Platba přes QR kód neznamená, že máš zaplaceno.</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Velká Británie — 3,5M liber -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card">
-                    <div class="quishing-icon">🇬🇧</div>
-                    <div class="quishing-where" id="qc2where">Velká Británie &mdash; 2024/2025</div>
-                    <div class="quishing-title" id="qc2title">800 hlášení, £3,5 milionu ukradeno</div>
-                    <p class="quishing-text" id="qc2text">
-                        Action Fraud evidoval téměř 800 hlášení QR podvodů za 12 měsíců do dubna 2025.
-                        Případy byly hlášeny na parkovištích v Londýně, Cornwallu, Plymouthu,
-                        Skotsku i na letišti Luton. Stejná kriminální síť operovala v Kanadě a USA.
-                    </p>
-                    <a id="qc2source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.thebureauinvestigates.com/stories/2025-06-27/quishing-new-qr-code-scam-sweeps-uk-car-parks" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: The Bureau of Investigative Journalism</a>
-                    <div class="quishing-lesson" id="qc2lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc2lessonText">Průměrná ztráta oběti: stovky liber. Podvodné samolepky se vyměňovaly každý den.</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Thornaby — £13 000 -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card quishing-card--severe">
-                    <div class="quishing-icon">🚉</div>
-                    <div class="quishing-where" id="qc3where">Thornaby, UK &mdash; 2024</div>
-                    <div class="quishing-title" id="qc3title">£13 000 ukradeno na nádraží</div>
-                    <p class="quishing-text" id="qc3text">
-                        Žena naskenovala QR kód na nádraží v Thornaby &mdash; kód vypadal jako
-                        součást legitimní informační tabule. Falešná stránka ji přiměla zadat
-                        platební údaje. Z účtu zmizelo přes 13 000 liber (přibližně 380 000 Kč).
-                    </p>
-                    <a id="qc3source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.friendsagainstscams.org.uk/news-and-updates/qr-code-scams-quishing" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Friends Against Scams UK</a>
-                    <div class="quishing-lesson" id="qc3lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc3lessonText">QR kód na veřejném místě nevypadá podezřele — proto jsou tyhle podvody tak účinné.</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Texas — 100 automatů -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card">
-                    <div class="quishing-icon">🇺🇸</div>
-                    <div class="quishing-where" id="qc4where">Texas, USA &mdash; 2021/2022</div>
-                    <div class="quishing-title" id="qc4title">100+ parkovacích automatů v San Antoniu</div>
-                    <p class="quishing-text" id="qc4text">
-                        Podvodníci v San Antoniu polepili více než 100 platebních automatů
-                        falešnými QR kódy. V Austinu pak úředníci zkontrolovali 900 automatů
-                        a podvodné kódy našli na 29 z nich. Byl to jeden z prvních masových
-                        případů tohoto druhu.
-                    </p>
-                    <a id="qc4source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://insmart.cz/pozor-na-podvody-s-qr-kody/" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Austin Transportation Dept.</a>
-                    <div class="quishing-lesson" id="qc4lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc4lessonText">Podvod je škálovatelný — vytvořit samolepku s QR kódem zvládne každý za pár korun.</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Česko — charita tornádo -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card">
-                    <div class="quishing-icon">🌪️</div>
-                    <div class="quishing-where" id="qc5where">Česko &mdash; 2021</div>
-                    <div class="quishing-title" id="qc5title">Falešná sbírka po tornádu na jihu Moravy</div>
-                    <p class="quishing-text" id="qc5text">
-                        Po tornádu na jihu Moravy lidé chtěli pomoci. Mladík umístil vedle
-                        sbírkových materiálů Diecézní charity Brno falešný QR kód vedoucí
-                        na jeho vlastní účet. Naštěstí ho policie dopadla dřív, než mu
-                        kdokoliv peníze poslal. Případ skončil dobře — ale varování platí.
-                    </p>
-                    <a id="qc5source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://blog.avast.com/cs/malicious-qr-codes-found-in-austin-avast" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: Avast Blog / Policie ČR</a>
-                    <div class="quishing-lesson" id="qc5lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc5lessonText">Policie pachatele dopadla. Ale příště nemusí. QR kód u charitativní sbírky vždy ověř přímo na webu organizace.</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Retailer — 200 prodejen -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card">
-                    <div class="quishing-icon">🛒</div>
-                    <div class="quishing-where" id="qc6where">USA &mdash; dokumentovaný případ</div>
-                    <div class="quishing-title" id="qc6title">200 prodejen, $2,3M škoda za 48 hodin</div>
-                    <p class="quishing-text" id="qc6text">
-                        Podvodníci nahradili legitimní QR kódy falešnými ve více než 200 prodejnách
-                        jednoho obchodníka. Během 48 hodin stál damage control firmu 2,3 milionu dolarů
-                        &mdash; ještě než přepočítali ztráty zákazníků a škody na reputaci.
-                    </p>
-                    <a id="qc6source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.hbs.net/blog/quishing" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: HBS.net — Quishing report</a>
-                    <div class="quishing-lesson" id="qc6lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc6lessonText">Podvod nepoškozuje jen oběti — i legitimní provozovatel nese reputační a finanční škodu.</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Nabíječky EV — Evropa -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card">
-                    <div class="quishing-icon">⚡</div>
-                    <div class="quishing-where" id="qc7where">Evropa (Berlín, UK) &mdash; 2024/2025</div>
-                    <div class="quishing-title" id="qc7title">Falešné QR kódy na nabíječkách elektromobilů</div>
-                    <p class="quishing-text" id="qc7text">
-                        Podvodníci začali lepit falešné QR kódy na nabíjecí stojany pro elektromobily
-                        po celé Evropě. Řidič naskenuje kód, zadá platební údaje na podvodné stránce
-                        imitující rozhraní operátora &mdash; a nabíjení se nespustí. Ubitricity potvrdil
-                        pokusy na méně než 30 místech v Berlíně. Preventivně reaguje i český ČEZ.
-                    </p>
-                    <a id="qc7source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.chip.cz/bezpecnost/kdo-dobiji-je-okraden-quishing-ohrozuje-uz-i-svet-elektromobility-siri-se-po-evrope-vite" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: CHIP.cz / Aktuálně.cz</a>
-                    <div class="quishing-lesson" id="qc7lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc7lessonText">Nabíječky s QR kódem na displeji (ne samolepce) jsou bezpečnější — samolepku lze přelepit, displej ne.</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Restaurace a platební QR kódy -->
-            <div class="col-md-6 col-lg-4">
-                <div class="quishing-card">
-                    <div class="quishing-icon">🍽️</div>
-                    <div class="quishing-where" id="qc8where">Restaurace — globální trend</div>
-                    <div class="quishing-title" id="qc8title">QR kódy u stolu: pohodlí i příležitost pro podvodníky</div>
-                    <p class="quishing-text" id="qc8text">
-                        Platební QR kódy na stolech v restauracích se staly standardem.
-                        FBI vydala varování: kód nalepený na stole může být přelepen falešným.
-                        Ten pak vede na podvodnou platební stránku — a zákazník si myslí,
-                        že platí účet. Přelepit samolepku zvládne kdokoliv za pár vteřin.
-                        FBI doslova doporučila zákazníkům vyžádat si raději tištěný jídelní lístek.
-                    </p>
-                    <a id="qc8source" style="font-size:0.7rem;color:#8b949e;margin-top:6px;display:block;" href="https://www.chip.cz/novinky/qr-kody-na-stolech-v-restauraci-pozor-mohou-je-zneuzit-podvodnici" style="color:#58a6ff;text-decoration:none;opacity:0.7;" target="_blank" rel="noopener">
-                        <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;margin-right:3px;"></i>Zdroj: CHIP.cz / FBI
-                    </a>
-                    <div class="quishing-lesson" id="qc8lesson">
-                        <span class="quishing-lesson-icon">💡</span>
-                        <span id="qc8lessonText">Gravírovaný nebo laminovaný QR kód na stole je bezpečnější než samolepka — přelepit jde snadno, poškodit gravuru ne.</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <p id="quishingSource" style="font-size:0.75rem;color:#8b949e;margin-top:16px;">
-            Zdroje: Radiožurnál / iROZHLAS (říjen 2024), The Bureau of Investigative Journalism (červen 2025),
-            Friends Against Scams UK, Action Fraud UK, Austin Transportation Department (2022), E15.cz (2021).
-        </p>
-    </div>
-
-    <div class="panel" id="fingerprint">
-        <h2 class="danger" id="revealTitle">Co o sobě právě prozrazuješ</h2>
-        <p id="revealText1">
-            Tohle jsou technické informace, které tvůj prohlížeč automaticky poslal,
-            jen proto, že jsi naskenoval QR kód a otevřel tuto stránku. QR kód není jen obrázek. Je to vstupní brána, která může vést kamkoliv &ndash;
-            a každá stránka, kterou otevřeš, o tobě získá minimálně tyto údaje:
-        </p>
-				
-		<!-- Obecné informace -->
-		<div class="fp-section panel mb-4">
-			<h3 class="fp-title">
-				<i class="bi bi-info-circle me-2" style="color:#58a6ff;"></i>
-				Obecné informace
-			</h3>
-			<p class="fp-desc">
-				Základní údaje, které váš prohlížeč posílá automaticky při každém načtení stránky.
-				Tyto informace nevyžadují žádný souhlas a získá je úplně každý web.
-			</p>
-			<ul id="fp-general" class="fp-body"></ul>
-		</div>
-
-		<!-- Zařízení -->
-		<div class="fp-section panel mb-4">
-			<h3 class="fp-title">
-				<i class="bi bi-cpu me-2" style="color:#ff7b72;"></i>
-				Informace o zařízení
-			</h3>
-			<p class="fp-desc">
-				Technické parametry vašeho zařízení, které pomáhají webům optimalizovat obsah —
-				ale také mohou sloužit k identifikaci konkrétního zařízení.
-			</p>
-			<ul id="fp-device" class="fp-body"></ul>
-		</div>
-
-		<!-- Displej -->
-		<div class="fp-section panel mb-4">
-			<h3 class="fp-title">
-				<i class="bi bi-display me-2" style="color:#8b949e;"></i>
-				Displej
-			</h3>
-			 <p class="fp-desc">
-				Informace o vašem monitoru nebo displeji. Tyto hodnoty jsou překvapivě unikátní
-				a často pomáhají odlišit jedno zařízení od druhého.
-			</p>
-			<ul id="fp-display" class="fp-body"></ul>
-		</div>
-
-		<!-- GPU -->
-		<div class="fp-section panel mb-4">
-			<h3 class="fp-title">
-				<i class="bi bi-gpu-card me-2" style="color:#d29922;"></i>
-				Grafická karta (GPU)
-			</h3>
-			<p class="fp-desc">
-				Informace získané pomocí WebGL. Tyto údaje pomáhají webům optimalizovat grafiku,
-				ale také mohou výrazně přispět k identifikaci konkrétního zařízení.
-			</p>
-			<ul id="fp-gpu" class="fp-body"></ul>
-		</div>
-
-		<!-- Síť -->
-		<div class="fp-section panel mb-4">
-			<h3 class="fp-title">
-				<i class="bi bi-wifi me-2" style="color:#3fb950;"></i>
-				Síť
-			</h3>
-			<p class="fp-desc">
-				Údaje o kvalitě připojení. Weby je používají pro optimalizaci obsahu,
-				ale mohou také odhalit typ vašeho připojení.
-			</p>
-			<ul id="fp-network" class="fp-body"></ul>
-		</div>
-
-		<!-- Fingerprint -->
-		<div class="fp-section panel mb-4">
-			<h3 class="fp-title">
-				<i class="bi bi-fingerprint me-2" style="color:#d29922;"></i>
-				Unikátní fingerprint (SHA‑256)
-			</h3>
-			<p class="fp-desc">
-				Kombinace všech výše uvedených údajů vytvoří unikátní otisk vašeho zařízení.
-				Neobsahuje osobní údaje, ale umožňuje rozpoznat opakovanou návštěvu.
-			</p>
-			<div class="fp-body">
-				<ul><li><code id="fp-hash" style="font-size:0.9rem;"></code></li></ul>
-			</div>
-		</div>
-
-	</div>
-
-
-
-    <div class="panel" id="statistiky">
-        <h2 id="chartTitle">Návštěvnost v čase</h2>
-        <div id="visitsChartWrap">
-            <div class="text-center py-4" id="visitsChartSpinner">
-                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-            </div>
-            <canvas id="visitsChart" height="120" style="display:none;"></canvas>
-        </div>
-    </div>
-
-    <div class="panel">
-        <h2 id="heatmapTitle">Heatmapa návštěvnosti</h2>
-        <div id="heatmapWrap" style="overflow-x:auto;">
-            <div class="text-center py-3" id="heatmapSpinner">
-                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-            </div>
-            <div id="heatmap"></div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-5">
-            <div class="panel">
-                <h2 id="deviceChartTitle">Mobil vs. Desktop</h2>
-                <div class="text-center py-4" id="deviceChartSpinner">
-                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-                </div>
-                <canvas id="deviceChart" height="220" style="display:none;"></canvas>
-            </div>
-        </div>
-        <div class="col-md-7">
-            <div class="panel">
-                <h2 id="osChartTitle">Operační systémy</h2>
-                <div class="text-center py-4" id="osChartSpinner">
-                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-                </div>
-                <canvas id="osChart" height="220" style="display:none;"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mapa + žebříček zemí (jen mobilní návštěvy) -->
-    <div class="panel" id="geoPanel">
-        <h2 id="geoTitle">Odkud přišli návštěvníci <small style="font-size:0.75rem;color:#8b949e;font-weight:400;">(mobilní zařízení)</small></h2>
-        <div class="row g-3 align-items-start">
-            <div class="col-md-8">
-                <div class="text-center py-5" id="worldMapSpinner">
-                    <div class="spinner-border text-secondary" role="status"></div>
-                </div>
-                <canvas id="worldMap" style="display:none;"></canvas>
-            </div>
-            <div class="col-md-4">
-                <div id="countryRanking" style="font-size:0.85rem;margin-bottom:20px;"></div>
-                <h3 style="font-size:0.9rem;margin-bottom:8px;">
-                    <i class="bi bi-wifi me-1" style="color:#3fb950;"></i>
-                    <span id="ispTitle">Top poskytovatelé</span>
-                </h3>
-                <div id="asnRanking" style="font-size:0.85rem;"></div>
-            </div>
-        </div>
-        <p id="geoNote" style="font-size:0.75rem;color:#8b949e;margin:12px 0 0;">
-            Geolokace a poskytovatel internetu jsou určeny podle IP adresy přes Cloudflare &ndash; přesnost na úrovni státu.
-        </p>
-    </div>
-
-    <div class="panel" id="projekt">
-        <h2 id="nocookiesTitle">Tento projekt je 100% bez cookies</h2>
-        <p id="nocookiesText1">
-            Tato stránka nepoužívá žádné cookies, žádné trackery, žádné analytické nástroje třetích stran.
-        </p>
-        <p id="nocookiesText2">
-            Cílem projektu je ukázat, jak snadno může jakákoliv stránka získat technické informace o tvém
-            zařízení &ndash; a to <strong>bez jakéhokoliv souhlasu nebo interakce</strong>.
-        </p>
-
-        <h3 id="motivationTitle" class="mt-4">Proč tenhle projekt vznikl</h3>
-        <p id="motivationText">
-            Lidé často skenují QR kódy automaticky, bez přemýšlení. Tento projekt vznikl jako jednoduchá,
-            vizuální ukázka toho, co o sobě prozradíš jen tím, že QR kód naskenuješ.
-        </p>
-
-        <p style="font-size:0.85rem;color:#8b949e;margin-top:8px;">
-            <i class="bi bi-github" style="margin-right:5px;"></i>
-            <span id="githubText">Projekt je open-source.</span>
-            <a id="githubLink" href="https://github.com/Buchtic/qr-visit-tracker" target="_blank" rel="noopener"
-               class="text-decoration-none" style="color:#58a6ff;">github.com/Buchtic/qr-visit-tracker</a>
-        </p>
-
-        <h3 id="contactTitle" class="mt-4">Chcete spolupracovat?</h3>
-        <p id="contactText">
-            Pokud máte zájem o rozšíření projektu, integraci do školení, nebo chcete vytvořit vlastní bezpečnostní osvětovou kampaň, můžete mě kontaktovat na <a href="mailto:info@neskenuj.me" class="text-decoration-none" style="color:#58a6ff;">info@neskenuj.me</a>
-        </p>
-
-
-        <h3 id="trainingTitle" class="mt-4">A pokud chcete skutečné školení…</h3>
-        <p id="trainingText">
-                    …tak běžte za profíky z <strong><a href="https://boit.cz" target="_blank" class="text-decoration-none" style="color:#58a6ff;">BOIT Cyber Security</a></strong>,
-        kteří dělají zábavná a záživná školení v oblasti kyberbezpečnosti, phishingu, sociálního inženýrství, u kterých se nebudete nudit.
-        a bezpečného chování online.
-        </p>
-    </div>
-
-    <!-- FAQ -->
-    <div class="panel" id="faq">
-        <h2 id="faqTitle">Časté otázky</h2>
-
-        <div class="accordion" id="faqAccordion">
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq1"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Co je to fingerprint a jak vzniká?
-                    </button>
-                </h3>
-                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        Fingerprint je unikátní otisk tvého zařízení a prohlížeče. Vzniká kombinací desítek
-                        technických parametrů &ndash; rozlišení displeje, jazyk, časová zóna, typ GPU, počet CPU vláken
-                        a dalších. Žádný z těchto parametrů sám o sobě nestačí k identifikaci, ale jejich
-                        kombinace je statisticky velmi unikátní. Výsledek se zahashuje algoritmem SHA-256
-                        na 64znakový řetězec. Tento otisk neobsahuje žádné osobní údaje, ale umožňuje
-                        rozpoznat opakovanou návštěvu ze stejného zařízení.
-
-                        <p style="margin:12px 0 0;">
-                            <strong style="color:#c9d1d9;">Jak unikátní jsi ve skutečnosti?</strong><br>
-                            Tato stránka pozná, jestli ses dnes vrátil/a &ndash; ale neporovnáváme tě s ostatními.
-                            Pokud tě zajímá jak moc unikátní je tvůj fingerprint mezi miliony uživatelů globálně,
-                            podívej se na projekt
-                            <a href="https://amiunique.org" target="_blank" rel="noopener"
-                               style="color:#58a6ff;">amiunique.org</a>
-                            &ndash; akademický výzkumný projekt, který analyzuje unikátnost prohlížečových
-                            fingerprintů a ukazuje, jak snadno tě lze identifikovat i bez cookies.
-                        </p>
-
-                        <p style="margin:8px 0 0;font-size:0.85rem;">
-                            <strong style="color:#8b949e;">Poznámka:</strong>
-                            Fingerprint se liší prohlížeč od prohlížeče &ndash; Chrome a Safari na stejném zařízení
-                            vygenerují jiný otisk. Proto mezibrowserová identifikace bez dalších dat nefunguje spolehlivě.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq2"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Jak se určuje typ zařízení (mobil vs. desktop)?
-                    </button>
-                </h3>
-                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        Detekce probíhá ve třech vrstvách přímo v prohlížeči. Nejprve se zkusí moderní
-                        User-Agent Client Hints API, které poskytuje přesnou informaci. Pokud není dostupné,
-                        analyzuje se User Agent řetězec (obsahuje slova jako „Android" nebo „iPhone").
-                        Jako záloha se kontroluje počet dotykových bodů &ndash; zařízení s více než jedním
-                        bodem je pravděpodobně mobilní. Výsledek je vždy jen odhad, ne absolutní pravda.
-                        Tablety mohou být klasifikovány různě podle nastavení prohlížeče.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq3"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Proč mohou být data o OS nepřesná &ndash; zejména u Apple zařízení?
-                    </button>
-                </h3>
-                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        Safari od verze 13 záměrně zamrazilo přesnou verzi systému v User Agentu.
-                        Jde o ochranu soukromí &ndash; přesná verze OS je jeden ze signálů pro fingerprinting.
-                        V praxi to znamená, že všichni Safari uživatelé vypadají pro web téměř identicky.
-                        Základní rozlišení iOS vs. macOS vs. Windows je obvykle zachováno,
-                        přesné verze systému jsou ale nespolehlivé u všech Apple zařízení.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq4"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Co jsou „roboti" a proč se nepočítají do statistik?
-                    </button>
-                </h3>
-                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        Roboti jsou automatizované programy, které procházejí weby &ndash; vyhledávací crawlery,
-                        bezpečnostní skenery nebo nástroje pro testování. Jejich návštěvy by zkreslily
-                        statistiky, protože nepředstavují skutečné lidi. Detekujeme je pomocí několika
-                        signálů: příznak <code>navigator.webdriver</code> (přítomný u Selenium a Puppeteer),
-                        podezřelá slova v User Agentu (headless, crawler, bot) nebo nulové hardwarové
-                        hodnoty typické pro headless prostředí. Roboti jsou zalogováni pro audit,
-                        ale do počítadel se nezapočítávají.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq5"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Jak se chránit před sledováním přes QR kódy?
-                    </button>
-                </h3>
-                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        Před naskenováním si zkontroluj, zda QR kód není přelepen jiným.
-                        Pokud ti prohlížeč ukáže URL před otevřením, přečti ji &ndash; podvodné stránky
-                        mají často podobné, ale jiné domény (např. <code>paypa1.com</code> místo <code>paypal.com</code>).
-                        Použij prohlížeč v anonymním režimu pro neznámé QR kódy. Pokud chceš minimalizovat
-                        fingerprinting obecně, pomáhá Firefox s rozšířením uBlock Origin nebo prohlížeč
-                        Brave, které aktivně blokují fingerprintingové techniky. Žádné řešení ale
-                        není 100% &ndash; tato stránka ukazuje, co lze zjistit i bez cookies a bez souhlasu.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" id="faq-preview" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq7"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Lze poznat, kam QR kód vede, ještě před naskenováním?
-                    </button>
-                </h3>
-                <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        <p style="margin-top:0;">Záleží na zařízení a aplikaci, kterou ke skenování používáš.</p>
-
-                        <p><strong style="color:#3fb950;">🍎 iPhone (iOS)</strong><br>
-                        Nativní fotoaparát na iPhonu URL zobrazí automaticky jako notifikaci ještě před tím,
-                        než na ni klepneš &ndash; stačí namířit na kód. Vidíš tedy doménu, na kterou QR míří,
-                        a můžeš se rozhodnout, zda ji otevřeš. Je to jedna z mála situací, kdy iOS uživatelé
-                        mají bezpečnostní výhodu oproti Androidu.</p>
-
-                        <p><strong style="color:#f0883e;">🤖 Android</strong><br>
-                        Nativní fotoaparát na Androidu URL ve většině případů přímo zobrazí a otevře
-                        &ndash; bez možnosti ji nejdřív přečíst. Chování se liší výrobce od výrobce
-                        (Samsung, Google Pixel, Xiaomi&hellip;) a verze systému. Obecně platí,
-                        že Android tuto ochranu standardně nenabízí.</p>
-
-                        <p><strong style="color:#58a6ff;">🔒 Jak se chránit na Androidu</strong><br>
-                        Použij specializovanou aplikaci pro skenování QR kódů, která URL zobrazí
-                        před otevřením &ndash; například <em>QR &amp; Barcode Scanner</em> od Gamma Play
-                        nebo Google Lens (zobrazí URL, ale rovnou nabídne otevřít).
-                        Alternativně můžeš v prohlížeči Chrome na Androidu použít funkci
-                        <em>Google Lens</em> přímo v adresním řádku.</p>
-
-                        <p style="margin-bottom:0;"><strong style="color:#8b949e;">⚠️ Pozor na zkrácené URL</strong><br>
-                        I když URL vidíš, může být zkrácená přes bit.ly, tinyurl nebo podobné služby.
-                        Samotný náhled domény pak nestačí &ndash; pod zkrácenou URL se může skrývat cokoliv.
-                        Naštěstí většina zkracovačů nabízí způsob, jak cíl odhalit ještě před kliknutím:</p>
-                        <ul style="margin-top:8px;margin-bottom:0;">
-                            <li><strong>bit.ly</strong> &ndash; přidej <code>+</code> na konec URL:
-                                <code>bit.ly/abc123<strong>+</strong></code><br>
-                                <span style="font-size:0.8rem;">Zobrazí statistiky odkazu včetně cílové adresy. Od roku 2025 může bit.ly na free účtech zobrazovat reklamu na této preview stránce &ndash; to je normální, není to útok.</span>
-                            </li>
-                            <li style="margin-top:6px;"><strong>TinyURL</strong> &ndash; přidej <code>preview.</code> před doménu:
-                                <code><strong>preview.</strong>tinyurl.com/abc123</code>
-                            </li>
-                            <li style="margin-top:6px;"><strong>Ostatní zkracovače</strong> &ndash; zkopíruj odkaz do
-                                <a href="https://checkshorturl.com" target="_blank" rel="noopener" style="color:#58a6ff;">checkshorturl.com</a>
-                                nebo podobné služby, která proklikne přesměrování za tebe a zobrazí konečnou URL.
-                            </li>
-                            <li style="margin-top:6px;"><strong>Pozor na vícenásobné přesměrování</strong> &ndash; zkrácená URL může vést na
-                                další zkrácenou URL a teprve ta na skutečný cíl. Preview triku proto nestačí vždy jen jednou.
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq8"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Víte kde bydlím? Jak znáte moje město a poskytovatele internetu?
-                    </button>
-                </h3>
-                <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        <p style="margin-top:0;">
-                            Ano, přibližně. Město a poskytovatele internetu (ISP) zjišťujeme
-                            z tvé IP adresy &ndash; tu sděluje tvůj prohlížeč každému webu automaticky,
-                            bez výjimky a bez možnosti to vypnout. Je to technický základ internetu.
-                        </p>
-                        <p>
-                            Cloudflare, přes který tato stránka běží, překládá IP adresu na přibližnou
-                            polohu (město, region, stát) a název poskytovatele (ASN &ndash; Autonomous System Number).
-                            Tato data dostaneme automaticky při každém požadavku &ndash; bez externího API,
-                            bez poplatků, bez ukládání samotné IP adresy.
-                        </p>
-                        <p>
-                            <strong style="color:#c9d1d9;">Co neukládáme:</strong>
-                            Samotnou IP adresu záměrně nelogujeme &ndash; ukládáme jen odvozená data
-                            (město, stát, ISP). IP adresa je osobní údaj ve smyslu GDPR;
-                            město a ISP jsou agregované informace bez možnosti zpětné identifikace konkrétní osoby.
-                        </p>
-                        <p style="margin-bottom:0;">
-                            <strong style="color:#c9d1d9;">Přesnost:</strong>
-                            Geolokace podle IP je přibližná &ndash; typicky na úroveň města,
-                            ale může být nepřesná o desítky kilometrů. VPN nebo Tor zobrazí
-                            polohu výstupního uzlu, ne tvoji skutečnou polohu.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq6"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Jsou tato data opravdu bez cookies a GDPR-friendly?
-                    </button>
-                </h3>
-                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        Ano &ndash; stránka neukládá žádné cookies, nepoužívá Google Analytics ani jiné
-                        trackery třetích stran. Fingerprint se vytváří a hashuje výhradně v prohlížeči,
-                        na server se odesílá jen výsledný hash (ne raw data). Hash neumožňuje zpětně
-                        rekonstruovat původní hodnoty. Ukládaná data (hash + typ zařízení + timestamp)
-                        neobsahují žádné osobní údaje ve smyslu GDPR. Cílem projektu je naopak
-                        ukázat, co weby <em>mohou</em> dělat &ndash; a motivovat k větší obezřetnosti.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item" style="background:transparent;border-color:#30363d;">
-                <h3 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#faq9"
-                            style="background:transparent;color:inherit;box-shadow:none;">
-                        Co je to „quishing" a stalo se to někdy doopravdy?
-                    </button>
-                </h3>
-                <div id="faq9" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body" style="color:#8b949e;">
-                        <p style="margin-top:0;">
-                            <strong style="color:#c9d1d9;">Quishing</strong> (z anglického QR + phishing) je útok,
-                            kdy podvodník přelepí nebo nahradí legitimní QR kód svým vlastním &ndash; ten pak
-                            vede na falešnou stránku místo té pravé. Oběť si myslí, že platí za parkování,
-                            přispívá na charitu nebo čte menu restaurace. Ve skutečnosti předává platební
-                            údaje útočníkovi.
-                        </p>
-                        <p>
-                            Proč je quishing tak účinný? Protože QR kód skryje URL &ndash; nevidíš
-                            kam vede, dokud ho nenaskenuješ. Na rozdíl od klasického phishingového odkazu
-                            v e-mailu ho nemůžeš před kliknutím zkontrolovat.
-                        </p>
-                        <p>
-                            <strong style="color:#c9d1d9;">Stalo se to doopravdy.</strong> Nejde o hypotetické hrozby:
-                        </p>
-                        <ul style="margin-bottom:12px;">
-                            <li>Ve <strong>Velké Británii</strong> evidoval Action Fraud téměř 800 hlášení QR podvodů
-                                za 12 měsíců do dubna 2025 &ndash; oběti přišly celkem o £3,5 milionu.</li>
-                            <li>V <strong>Praze</strong> (2024) přelepili podvodníci parkovací automaty samolepkami
-                                imitujícími EasyPark. Řidiči zaplatili podvodníkům a navíc dostali pokutu.</li>
-                            <li>V <strong>Česku po tornádu</strong> (2021) nastražili podvodníci falešné QR kódy
-                                vedle sbírkových materiálů charitativních organizací.</li>
-                            <li>V <strong>Texasu</strong> bylo přelepeno přes 100 parkovacích automatů &ndash;
-                                v Austinu pak úředníci zkontrolovali 900 automatů a podvodné kódy našli na 29 z nich.</li>
-                        </ul>
-                        <p style="margin-bottom:0;">
-                            <strong style="color:#c9d1d9;">Jak se bránit:</strong>
-                            Zkontroluj jestli QR kód nevypadá jako přelepka.
-                            Po naskenování si přečti URL &ndash; odpovídá tomu co očekáváš?
-                            U plateb zkontroluj příjemce před odesláním.
-                            A pokud máš pochybnosti, raději zaplať klasicky &ndash; kartou u automatu nebo hotově.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
+<script src="/vendor/js/chartjs-chart-geo.min.js"></script>
+<script src="/charts.js?v=20260909-01"></script>
 
 <script>
-// Otevřít FAQ accordion a scrollovat na něj při kliknutí z odkazu v textu
-function openFaqPreview(e) {
-    e.preventDefault();
-    const target = document.getElementById("faq7");
-    const btn = document.querySelector('[data-bs-target="#faq7"]');
-    if (target && btn && window.bootstrap) {
-        const bsCollapse = new bootstrap.Collapse(target, { toggle: false });
-        bsCollapse.show();
-        setTimeout(() => {
-            document.getElementById("faq-preview").scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 150);
+// Theme toggle
+document.getElementById("themeToggle").addEventListener("click", () => {
+    const isDark = document.body.classList.contains("dark");
+    document.body.classList.toggle("dark", !isDark);
+    document.body.classList.toggle("light", isDark);
+    const newTheme = isDark ? "light" : "dark";
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+    document.getElementById("themeToggle").textContent = isDark ? "◑" : "☼";
+});
+
+// Obnovit uložené téma
+(function() {
+    const t = localStorage.getItem("theme");
+    if (t) {
+        document.body.classList.remove("dark", "light");
+        document.body.classList.add(t);
+    }
+})();
+
+// Slug z URL
+function getSlug() {
+    // Podporuje obě varianty:
+    // /kampan/?id=jl2vk4oh  (nová, spolehlivá)
+    // /kampan/jl2vk4oh      (stará, přes pathname)
+    const param = new URLSearchParams(location.search).get("id");
+    if (param) return param;
+    const parts = location.pathname.replace(/\/+$/, "").split("/");
+    const last = parts[parts.length - 1];
+    return last === "kampan" ? "" : last;
+}
+
+// Formátovat datum
+function formatDate(str) {
+    if (!str) return "–";
+    return new Date(str).toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
+}
+
+// Počet dní od spuštění
+function daysRunning(startDate) {
+    if (!startDate) return "";
+    const diff = Math.floor((Date.now() - new Date(startDate)) / 86400000);
+    if (diff === 0) return "Spuštěno dnes";
+    if (diff === 1) return "Běží 1 den";
+    if (diff < 5) return `Běží ${diff} dny`;
+    return `Běží ${diff} dní`;
+}
+
+async function loadCampaign() {
+    const slug = getSlug();
+    if (!slug || slug === "kampan") { showError(); return; }
+
+    try {
+        const res = await fetch(`/api/campaigns/${slug}`);
+        if (!res.ok) { showError(); return; }
+        const data = await res.json();
+
+        // Titulek stránky
+        document.title = `${data.name} — Report kampaně`;
+
+        // Hlavička
+        document.getElementById("campaignName").textContent  = data.name;
+        const descEl = document.getElementById("campaignDesc");
+        if (data.description) {
+            descEl.textContent = data.description;
+        } else {
+            descEl.style.display = "none";
+        }
+        document.getElementById("campaignStart").textContent = formatDate(data.startDate);
+        document.getElementById("campaignDays").textContent  = daysRunning(data.startDate);
+
+        // Metriky
+        document.getElementById("mTotal").textContent   = data.total ?? "–";
+        document.getElementById("mToday").textContent   = data.stats?.at(-1)?.count ?? "–";
+        document.getElementById("mMobile").textContent  = data.deviceBreakdown?.mobile  ?? "–";
+        document.getElementById("mDesktop").textContent = data.deviceBreakdown?.desktop ?? "–";
+
+        // Device bar
+        const mob  = data.deviceBreakdown?.mobile  || 0;
+        const desk = data.deviceBreakdown?.desktop || 0;
+        const total = mob + desk || 1;
+        const mobPct  = Math.round(mob  / total * 100);
+        const deskPct = Math.round(desk / total * 100);
+        document.getElementById("mobBar").style.width   = mobPct  + "%";
+        document.getElementById("deskBar").style.width  = deskPct + "%";
+        document.getElementById("mobPct").textContent   = mobPct  + " %";
+        document.getElementById("deskPct").textContent  = deskPct + " %";
+
+        // Zobrazit nejdřív — aby canvas měl správnou velikost
+        document.getElementById("loadingState").style.display = "none";
+        document.getElementById("mainContent").style.display  = "block";
+
+        // Graf — až po zobrazení (canvas musí mít nenulovou velikost)
+        console.log("renderLineChart:", typeof renderLineChart, data.stats?.length, "bodů");
+        renderLineChart(data.stats || [], "lineChart");
+
+        // Top země
+        if (data.countryRanking && data.countryRanking.length > 0) {
+            document.getElementById("countryPanel").style.display = "";
+            const list = document.getElementById("countryList");
+            const max = data.countryRanking[0].count || 1;
+            list.innerHTML = data.countryRanking.slice(0, 8).map((item, i) => `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                    <span style="font-size:0.72rem;color:#8b949e;width:16px;text-align:right;">${i + 1}</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;">${item.cc}</div>
+                        <div style="background:#21262d;border-radius:2px;height:4px;margin-top:3px;overflow:hidden;">
+                            <div style="height:100%;background:#58a6ff;border-radius:2px;width:${Math.round(item.count/max*100)}%"></div>
+                        </div>
+                    </div>
+                    <span style="font-size:0.8rem;font-weight:600;">${item.count}</span>
+                </div>
+            `).join("");
+        }
+
+    } catch (e) {
+        console.error("loadCampaign error:", e.message, e.stack);
+        showError();
     }
 }
-</script>
 
-    <footer class="text-center mt-5 mb-3" style="color:#8b949e;">
-        <hr style="border-color:#30363d;">
-        <p class="mb-1">
-            Tento projekt je dostupný pod licencí <strong>Creative Commons BY 4.0</strong>.
-        </p>
-        <p class="mt-3">
-            © 2024–2026 neskenuj.me / scanresponsibly.it | Created by <a href="https://buchtic.net" target="_blank">Buchtič</a>
-        </p>
-    </footer>
+function showError() {
+    document.getElementById("loadingState").style.display = "none";
+    document.getElementById("errorState").style.display   = "";
+}
 
-</div>
-
-<script src="vendor/js/chartjs-chart-geo.min.js"></script>
-<script>
-var b = document.head.querySelector('meta[name="build"]').content;
-document.write('<script src="charts.js?v=' + b + '"><\/script>');
-document.write('<script src="script.js?v=' + b + '"><\/script>');
+loadCampaign();
 </script>
 </body>
 </html>
