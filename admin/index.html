@@ -4,7 +4,7 @@
 <title>Admin – QR Visit Tracker</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="build" content="20260909-93800">
+<meta name="build" content="20260909-01">
 <link rel="stylesheet" href="../vendor/css/bootstrap-icons.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
@@ -852,9 +852,40 @@ async function loadCampaigns() {
     }
 }
 
-loadStats();
-loadLogs(true);
-loadCampaigns();
+// ----------------------------------------
+// Admin token + inicializace
+// ----------------------------------------
+function getAdminToken() {
+    return sessionStorage.getItem("admin_token") || "";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Zkusit načíst bez tokenu (CF Access JWT postačí pokud je session platná)
+    // Pokud API vrátí 401, zobrazit dialog pro zadání tokenu
+    loadStats();
+    loadLogs(true);
+    loadCampaigns();
+});
+
+// Přidat X-Admin-Token do fetch volání pokud je k dispozici
+const _origFetch = window.fetch.bind(window);
+window.fetch = async function(url, opts = {}) {
+    const token = getAdminToken();
+    if (token && typeof url === "string" && url.includes("/api/")) {
+        opts.headers = Object.assign({}, opts.headers, { "X-Admin-Token": token });
+    }
+    const res = await _origFetch(url, opts);
+    // Pokud 401, nabídnout zadání tokenu a zkusit znovu
+    if (res.status === 401 && typeof url === "string" && url.includes("/api/")) {
+        const t = window.prompt("Přístup zamítnut. Zadej Admin Token:");
+        if (t) {
+            sessionStorage.setItem("admin_token", t.trim());
+            opts.headers = Object.assign({}, opts.headers, { "X-Admin-Token": t.trim() });
+            return _origFetch(url, opts);
+        }
+    }
+    return res;
+};
 </script>
 <script>
 var b = document.head.querySelector('meta[name="build"]').content;
