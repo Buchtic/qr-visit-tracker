@@ -284,10 +284,14 @@ Zero Trust → Access → Applications → Add → Self-hosted:
 - Policy: Include → Emails → tvůj@email.com
 - Identity provider: One-time PIN nebo Google
 
+CF Access po přihlášení nastaví cookie `CF_Authorization` platnou pro celou doménu. Admin dashboard ji posílá automaticky s každým API requestem přes `credentials: "include"` — není potřeba žádný extra token.
+
+**Volitelně:** Přidat `/api/campaigns` a `/api/admin/logs` jako další chráněné cesty v CF Access aplikaci. CF pak přidává JWT hlavičku i k přímým API requestům (např. z curl).
+
 ### 5. (Volitelně) Nastavit ADMIN_TOKEN secret
 
 Pages → Settings → Environment Variables → přidat `ADMIN_TOKEN` s náhodnou hodnotou.
-Záložní autentizace pro API bez CF Access session (např. pro lokální testování).
+Záložní autentizace pro API bez CF Access session — např. pro lokální testování nebo automatizaci.
 
 ---
 
