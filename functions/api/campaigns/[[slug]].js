@@ -20,9 +20,14 @@ function generateSlug() {
 
 // Ověřit že request přišel přes CF Access (nebo má admin token)
 function isAdminRequest(request, env) {
-    // CF Access nastaví tuto hlavičku po úspěšném přihlášení
+    // CF Access nastaví tuto hlavičku pro stránky chráněné CF Access
     const cfJwt = request.headers.get("CF-Access-Jwt-Assertion");
     if (cfJwt) return true;
+
+    // CF Access cookie — dostupná na všech cestách domény
+    // Fetch z admin stránky ji posílá automaticky přes credentials: "include"
+    const cookie = request.headers.get("Cookie") || "";
+    if (cookie.includes("CF_Authorization=")) return true;
 
     // Záložní: vlastní admin token (nastav jako CF Pages secret: ADMIN_TOKEN)
     const adminToken = request.headers.get("X-Admin-Token");
