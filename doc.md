@@ -419,3 +419,163 @@ CSP povoluje scripty a styly z `'self'` a `cdnjs.cloudflare.com`. Admin část n
 Creative Commons BY 4.0
 
 © 2024–2026 neskenuj.me / scanresponsibly.it | Created by [Buchtič](https://buchtic.net)
+
+---
+
+## Záloha a migrace dat
+
+### Export přes admin dashboard
+
+Admin → sekce **Export / Záloha** → tlačítka ke stažení JSON souborů:
+
+| Tlačítko | Endpoint | Obsah |
+|---|---|---|
+| Vše stáhnout | `/api/admin/export` | CAMPAIGNS + VISIT_COUNTER agregáty |
+| Kampaně | `/api/admin/export?ns=campaigns` | Metadata a statistiky kampaní |
+| Statistiky | `/api/admin/export?ns=counter` | Agregované čítače (total, device, OS, country, ASN) |
+| Logy | `/api/admin/export?ns=logs&limit=500` | Posledních 500 záznamů návštěv |
+
+Soubor se stáhne jako `qr-tracker-backup-{datum}.json`.
+
+**Bezpečnost:** Endpoint nemá CORS hlavičky — není přístupný cross-origin. Chráněno CF Access cookie stejně jako ostatní admin endpointy. Ephemeral klíče (`fp:*`, `stats-cache:*`) jsou ze zálohy vynechány.
+
+**Poznámka:** Workers mají CPU limit 10ms — pro velké datasety (tisíce logů) použijte R2 Cron backup.
+
+---
+
+### Automatická záloha do R2 (doporučeno pro produkci)
+
+Denní snapshot všech KV dat do Cloudflare R2 Object Storage (10 GB zdarma).
+
+#### 1. Vytvořit R2 bucket
+
+```
+CF Dashboard → R2 → Create Bucket → název: qr-tracker-backups
+```
+
+#### 2. Nasadit backup Worker
+
+Soubor `workers/r2-backup.js` nasadit jako samostatný CF Worker:
+
+```
+CF Dashboard → Workers & Pages → Create → Worker
+→ Název: qr-tracker-r2-backup
+→ Nahrát obsah r2-backup.js
+```
+
+#### 3. Nastavit bindings
+
+Worker → Settings → Bindings:
+- KV: `VISIT_COUNTER`, `VISIT_LOGS`, `CAMPAIGNS` (stejné jako Pages)
+- R2: `BACKUP_BUCKET` → bucket `qr-tracker-backups`
+- Environment variable: `ADMIN_TOKEN` → stejná hodnota jako v Pages
+
+#### 4. Nastavit Cron Trigger
+
+```
+Worker → Settings → Triggers → Cron Triggers → Add
+Schedule: 0 2 * * *   (každý den ve 2:00 UTC)
+```
+
+#### Bezpečnost R2 Workeru
+
+- **Cron Trigger** volá `scheduled()` handler — není HTTP přístupný, nevyžaduje auth
+- **HTTP handler** (manuální spuštění) vyžaduje `X-Admin-Token`
+- Pokud `ADMIN_TOKEN` není nastaven, HTTP handler vrací 503 — Cron funguje dál
+- R2 bucket musí být **private** (výchozí nastavení CF) — nikdy nastavovat jako public
+- Zálohy v R2 nejsou šifrované — přístup pouze přes CF Dashboard nebo Workers API
+
+#### 5. Struktura záloh v R2
+
+```
+backups/
+├── 2026-09-10/
+│   ├── campaigns.json    ← metadata a statistiky kampaní
+│   ├── counter.json      ← agregované čítače
+│   ├── logs.json         ← záznamy návštěv za daný den
+│   └── manifest.json     ← přehled zálohy (počty klíčů, chyby)
+├── 2026-09-11/
+│   └── ...
+```
+
+#### Manuální spuštění zálohy
+
+```bash
+curl -X GET https://qr-tracker-r2-backup.{subdomain}.workers.dev \
+  -H "X-Admin-Token: {tvůj-admin-token}"
+```
+
+---
+
+### Migrace na D1 (SQLite) — budoucí upgrade
+
+Až projekt poroste (více kampaní, složitější dotazy), zálohy v R2 umožní snadnou migraci na D1:
+
+#### Navrhované schéma D1
+
+```sql
+CREATE TABLE campaigns (
+    slug        TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    description TEXT,
+    start_date  TEXT,
+    created_at  TEXT
+);
+
+CREATE TABLE campaign_stats (
+    slug    TEXT,
+    date    TEXT,
+    hits    INTEGER DEFAULT 0,
+    mobile  INTEGER DEFAULT 0,
+    desktop INTEGER DEFAULT 0,
+    PRIMARY KEY (slug, date)
+);
+
+CREATE TABLE campaign_countries (
+    slug    TEXT,
+    country TEXT,
+    hits    INTEGER DEFAULT 0,
+    PRIMARY KEY (slug, country)
+);
+
+CREATE TABLE visits (
+    id          TEXT PRIMARY KEY,
+    fingerprint TEXT,
+    device_type TEXT,
+    os          TEXT,
+    is_bot      INTEGER,
+    likely_scan INTEGER,
+    country     TEXT,
+    city        TEXT,
+    as_org      TEXT,
+    referrer    TEXT,
+    utm_campaign TEXT,
+    timestamp   INTEGER
+);
+
+CREATE INDEX idx_visits_timestamp ON visits(timestamp);
+CREATE INDEX idx_visits_campaign  ON visits(utm_campaign);
+```
+
+#### Import z R2 zálohy
+
+```javascript
+// Jednorázový import Worker (spustit jednou při migraci)
+const backup = await env.BACKUP_BUCKET.get("backups/2026-09-10/campaigns.json");
+const { data } = await backup.json();
+
+for (const [key, value] of Object.entries(data)) {
+    if (!key.startsWith("campaign:") || key.split(":").length !== 2) continue;
+    const slug = key.replace("campaign:", "");
+    const meta = JSON.parse(value);
+    await env.DB.prepare(
+        "INSERT OR IGNORE INTO campaigns VALUES (?, ?, ?, ?, ?)"
+    ).bind(slug, meta.name, meta.description, meta.startDate, meta.createdAt).run();
+}
+```
+
+**Kdy migrovat na D1:**
+- Více než 20 aktivních kampaní
+- Potřeba filtrování logů v SQL (GROUP BY, JOIN)
+- KV operace trvale přes 80% denního limitu
+- Potřeba real-time analytiky

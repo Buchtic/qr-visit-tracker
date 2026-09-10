@@ -248,3 +248,35 @@ Cloudflare má platné DPA a EU Standard Contractual Clauses. Viz [cloudflare.co
 ---
 
 *Audit: září 2026 | OWASP Top 10 (2021)*
+
+---
+
+## Export a záloha dat
+
+### GET /api/admin/export
+
+| Vlastnost | Hodnota |
+|---|---|
+| Auth | CF Access cookie / JWT / X-Admin-Token — stejná logika jako ostatní admin endpointy |
+| CORS | Záměrně bez `Access-Control-Allow-Origin` — export nesmí být dostupný cross-origin |
+| ns parametr | Whitelist validace: `all`, `campaigns`, `counter`, `logs` — neznámé hodnoty → `all` |
+| limit parametr | Validován jako číslo, rozsah 1–1000, default 500 |
+| Error response | Generická zpráva bez leak interních detailů KV struktury |
+| Ephemeral klíče | `fp:*` (TTL 48h) a `stats-cache:*` (TTL 5min) jsou záměrně vynechány ze zálohy |
+
+### R2 Backup Worker
+
+| Vlastnost | Hodnota |
+|---|---|
+| Cron Trigger | Volá `scheduled()` handler — nevyžaduje auth, není HTTP přístupný |
+| HTTP handler | Vyžaduje `X-Admin-Token` — pouze pro manuální spuštění |
+| ADMIN_TOKEN chybí | HTTP handler vrací 503 — Cron Trigger funguje dál bezpečně |
+| Povolené metody | Pouze GET — ostatní metody vrací 405 |
+| R2 bucket | Přístupný pouze Worker bindingem — není veřejně dostupný bez CF R2 přístupu |
+| Data v R2 | JSON soubory bez šifrování — R2 bucket musí být private (výchozí nastavení) |
+
+**Doporučení:** R2 bucket `qr-tracker-backups` nastavit jako **private** (výchozí) — nikdy jako public. Přístup k zálohám přes CF R2 Dashboard nebo Workers API s tokenem.
+
+---
+
+*Audit: září 2026 | OWASP Top 10 (2021)*
