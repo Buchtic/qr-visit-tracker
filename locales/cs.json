@@ -161,5 +161,11 @@
   "qc8text": "Platební QR kódy na stolech v restauracích se staly standardem. FBI vydala varování: kód nalepený na stole může být přelepen falešným, který vede na podvodnou platební stránku. Zákazník si myslí, že platí účet – ve skutečnosti posílá peníze podvodníkům. Přelepit samolepku zvládne kdokoliv za pár vteřin.",
   "qc8lessonText": "Gravírovaný nebo laminovaný QR kód na stole je bezpečnější než samolepka – přelepit jde snadno, poškodit gravuru ne.",
   "qc8source": "Zdroj: CHIP.cz / FBI",
-  "githubText": "Projekt je open-source. "
+  "githubText": "Projekt je open-source. ",
+  "nav.rizika": "Rizika",
+  "nav.quishing": "Případy",
+  "nav.fingerprint": "Fingerprint",
+  "nav.statistiky": "Statistiky",
+  "nav.faq": "FAQ",
+  "nav.projekt": "O projektu"
 }

@@ -161,5 +161,11 @@
   "qc8text": "Payment QR codes on restaurant tables have become the norm. The FBI issued a warning: a sticker on a table can be covered with a fake one leading to a fraudulent payment page. The customer thinks they're paying the bill — they're actually sending money to scammers. Replacing a sticker takes seconds.",
   "qc8lessonText": "An engraved or laminated QR code on a table is safer than a sticker — stickers are easy to cover, engravings are not.",
   "qc8source": "Source: CHIP.cz / FBI",
-  "githubText": "This project is open-source. "
+  "githubText": "This project is open-source. ",
+  "nav.rizika": "Risks",
+  "nav.quishing": "Cases",
+  "nav.fingerprint": "Fingerprint",
+  "nav.statistiky": "Statistics",
+  "nav.faq": "FAQ",
+  "nav.projekt": "About"
 }
