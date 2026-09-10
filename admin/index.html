@@ -4,12 +4,14 @@
 <title>Admin – QR Visit Tracker</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="build" content="20260909-936">
+<meta name="build" content="20260909-93800">
 <link rel="stylesheet" href="../vendor/css/bootstrap-icons.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="../vendor/js/chartjs-chart-geo.min.js"></script>
+
+<link rel="stylesheet" href="../styles.css">
 
 <!-- Cache busting — změňte content v meta[name="build"] po každém deployi -->
 <script>
@@ -18,7 +20,6 @@
     document.head.querySelector('link[href="../styles.css"]').href = "../styles.css?v=" + b;
 })();
 </script>
-<link rel="stylesheet" href="../styles.css">
 <style>
     .stat-card { text-align:center; }
     .stat-card .num { font-size:2.4rem; font-weight:700; line-height:1.1; }
@@ -393,7 +394,7 @@ function applyQuickFilter(el) {
 // Načtení statistik
 // ----------------------------------------
 async function loadStats() {
-    const res = await fetch("../api/stats?device=all");
+    const res = await fetch("../api/stats?device=all", { credentials: "include" });
     const data = await res.json();
 
     document.getElementById("mTotal").textContent = data.total || 0;
@@ -565,7 +566,7 @@ async function loadLogs(reset = true) {
     if (activeQFilter) url += `&${activeQFilter}`;
     if (currentCursor) url += `&cursor=${encodeURIComponent(currentCursor)}`;
 
-    const res  = await fetch(url);
+    const res  = await fetch(url, { credentials: "include" });
     const data = await res.json();
 
     currentCursor = data.nextCursor || null;
@@ -719,6 +720,7 @@ async function createCampaign() {
 
     try {
         const res = await fetch("../api/campaigns", {
+            credentials: "include",
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name, description: desc, startDate: start })
@@ -746,7 +748,7 @@ async function createCampaign() {
 async function loadCampaigns() {
     const container = document.getElementById("campaignList");
     try {
-        const res  = await fetch("../api/campaigns");
+        const res  = await fetch("../api/campaigns", { credentials: "include" });
         const data = await res.json();
         const list = data.campaigns || [];
 
