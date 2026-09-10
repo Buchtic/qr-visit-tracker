@@ -4,7 +4,7 @@
 <title>Report kampaně</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="build" content="20260910-01">
+<meta name="build" content="20260910-13000">
 <link rel="stylesheet" href="/vendor/css/bootstrap-icons.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
@@ -312,27 +312,47 @@ async function loadCampaign() {
         document.getElementById("loadingState").style.display = "none";
         document.getElementById("mainContent").style.display  = "block";
 
-        // Graf — až po zobrazení (canvas musí mít nenulovou velikost)
-        console.log("renderLineChart:", typeof renderLineChart, data.stats?.length, "bodů");
+        // Vykreslit graf — mainContent musí být viditelný před renderováním
         renderLineChart(data.stats || [], "lineChart");
 
-        // Top země
+        // Top země — DOM-based renderování (ochrana XSS pro country kódy)
         if (data.countryRanking && data.countryRanking.length > 0) {
-            document.getElementById("countryPanel").style.display = "";
+            document.getElementById("countryPanel").style.display = "block";
             const list = document.getElementById("countryList");
+            list.innerHTML = "";
             const max = data.countryRanking[0].count || 1;
-            list.innerHTML = data.countryRanking.slice(0, 8).map((item, i) => `
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
-                    <span style="font-size:0.72rem;color:#8b949e;width:16px;text-align:right;">${i + 1}</span>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;">${item.cc}</div>
-                        <div style="background:#21262d;border-radius:2px;height:4px;margin-top:3px;overflow:hidden;">
-                            <div style="height:100%;background:#58a6ff;border-radius:2px;width:${Math.round(item.count/max*100)}%"></div>
-                        </div>
-                    </div>
-                    <span style="font-size:0.8rem;font-weight:600;">${item.count}</span>
-                </div>
-            `).join("");
+            data.countryRanking.slice(0, 8).forEach((item, i) => {
+                const wrap = document.createElement("div");
+                wrap.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:7px;";
+
+                const rank = document.createElement("span");
+                rank.style.cssText = "font-size:0.72rem;color:#8b949e;width:16px;text-align:right;";
+                rank.textContent = i + 1;
+
+                const inner = document.createElement("div");
+                inner.style.cssText = "flex:1;min-width:0;";
+
+                const cc = document.createElement("div");
+                cc.style.fontSize = "0.78rem";
+                cc.textContent = item.cc; // textContent — žádné XSS
+
+                const barWrap = document.createElement("div");
+                barWrap.style.cssText = "background:#21262d;border-radius:2px;height:4px;margin-top:3px;overflow:hidden;";
+                const bar = document.createElement("div");
+                bar.style.cssText = `height:100%;background:#58a6ff;border-radius:2px;width:${Math.round(item.count/max*100)}%`;
+                barWrap.appendChild(bar);
+                inner.appendChild(cc);
+                inner.appendChild(barWrap);
+
+                const count = document.createElement("span");
+                count.style.cssText = "font-size:0.8rem;font-weight:600;";
+                count.textContent = item.count;
+
+                wrap.appendChild(rank);
+                wrap.appendChild(inner);
+                wrap.appendChild(count);
+                list.appendChild(wrap);
+            });
         }
 
     } catch (e) {
