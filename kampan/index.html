@@ -4,7 +4,7 @@
 <title>Report kampaně</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="build" content="20260910-10400">
+<meta name="build" content="20260910-12450">
 <link rel="stylesheet" href="/vendor/css/bootstrap-icons.min.css">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
@@ -311,7 +311,11 @@ async function loadCampaign() {
         document.getElementById("mobPct").textContent   = mobPct  + " %";
         document.getElementById("deskPct").textContent  = deskPct + " %";
 
-        // Graf
+        // Zobrazit nejdřív — aby canvas měl správnou velikost
+        document.getElementById("loadingState").style.display = "none";
+        document.getElementById("mainContent").style.display  = "";
+
+        // Graf — až po zobrazení (canvas musí mít nenulovou velikost)
         console.log("renderLineChart:", typeof renderLineChart, data.stats?.length, "bodů");
         renderLineChart(data.stats || [], "lineChart");
 
@@ -333,10 +337,6 @@ async function loadCampaign() {
                 </div>
             `).join("");
         }
-
-        // Zobrazit
-        document.getElementById("loadingState").style.display = "none";
-        document.getElementById("mainContent").style.display  = "";
 
     } catch (e) {
         console.error(e);
