@@ -251,6 +251,39 @@ Cloudflare má platné DPA a EU Standard Contractual Clauses. Viz [cloudflare.co
 
 ---
 
+## CORS a HTTP metody
+
+### CORS politika
+
+Projekt běží celý na jedné doméně (`neskenuj.me`) — same-origin requesty CORS nepodléhají. CORS hlavičky jsou relevantní pouze pro cross-origin přístupy třetích stran.
+
+| Endpoint | `Access-Control-Allow-Origin` | Důvod |
+|---|---|---|
+| `POST /api/visit` | `*` | Veřejný — kdokoliv může sledovat svůj otisk |
+| `GET /api/stats` | `*` | Veřejná agregovaná data |
+| `GET /api/campaigns/{slug}` | `*` | Veřejné výsledky kampaně |
+| `GET/POST/DELETE /api/campaigns` | ❌ žádná | Admin — cross-origin přístup nežádoucí |
+| `GET /api/admin/logs` | ❌ žádná | Admin — cross-origin přístup nežádoucí |
+| `GET /api/admin/export` | ❌ žádná | Admin — export nesmí být cross-origin dostupný |
+
+### OPTIONS / Preflight
+
+`campaigns.js` obsahuje `onRequestOptions()` handler pro CORS preflight:
+```
+Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, X-Admin-Token
+```
+
+### TRACE metoda
+
+TRACE je blokována Cloudflare infrastrukturou před dosažením Workers kódu — Cross-Site Tracing (XST) útok není možný. Není potřeba explicitní blokování v kódu.
+
+### Nebezpečné HTTP metody
+
+Cloudflare Pages Functions registrují handlery explicitně (`onRequestGet`, `onRequestPost` atd.) — neregistrované metody automaticky vrátí 405 Method Not Allowed. Není potřeba middleware.
+
+---
+
 ## Export a záloha dat
 
 ### GET /api/admin/export
